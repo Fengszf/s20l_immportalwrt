@@ -182,6 +182,65 @@ sync_repo_root_package_to_feed_dir() {
 }
 
 
+sync_tingreader_packages_to_feed_dir() {
+    local repo_url="$1"
+    local repo_branch="$2"
+    local target_dir="$3"
+    local repo_label="$4"
+    local tmp_dir
+    local clone_args=(clone --depth 1 --filter=blob:none)
+    local pkg
+    local tingreader_packages=(tingreader luci-app-tingreader)
+
+    tmp_dir=$(mktemp -d)
+
+    if [ -n "$repo_branch" ]; then
+        clone_args+=(-b "$repo_branch")
+    fi
+
+    clone_args+=("$repo_url" "$tmp_dir")
+
+    echo "正在从 $repo_label 同步 Ting Reader 软件包..."
+    if ! git_retry "${clone_args[@]}"; then
+        echo "错误：从 $repo_url 克隆 $repo_label 失败" >&2
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    # tingreader 的 Makefile 通过相对路径 include 仓库根目录的 version.mk，
+    # 展平到 feed 目录后该文件必须位于 feed 根目录，否则版本与哈希变量缺失。
+    if [ ! -f "$tmp_dir/version.mk" ]; then
+        echo "错误：$repo_label 仓库缺少 version.mk" >&2
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    for pkg in "${tingreader_packages[@]}"; do
+        if [ ! -f "$tmp_dir/$pkg/Makefile" ]; then
+            echo "错误：$repo_label 仓库缺少 $pkg 软件包目录" >&2
+            rm -rf "$tmp_dir"
+            return 1
+        fi
+
+        rm -rf "$target_dir/$pkg"
+        if ! mv "$tmp_dir/$pkg" "$target_dir/"; then
+            echo "错误：无法同步 $repo_label/$pkg" >&2
+            rm -rf "$tmp_dir"
+            return 1
+        fi
+    done
+
+    rm -rf "$target_dir/version.mk"
+    if ! mv "$tmp_dir/version.mk" "$target_dir/version.mk"; then
+        echo "错误：无法同步 $repo_label/version.mk" >&2
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+
+    rm -rf "$tmp_dir"
+}
+
+
 verify_istore_apk_support() {
     local package_dir="$1"
     local makefile_path="$package_dir/Makefile"
@@ -277,6 +336,7 @@ install_custom_feed() {
         open-app-filter luci-app-oaf lucky luci-app-lucky luci-app-easytier
         luci-app-emmc-health luci-app-wolultra luci-app-mini-diskmanager
         axonhub luci-app-axonhub gecoosac luci-app-gecoosac sing-box
+        tingreader luci-app-tingreader
     )
     local custom_feed_sources=()
     local missing_feed_dirs=()
@@ -396,6 +456,13 @@ install_custom_feed() {
     fi
 
     if ! fix_emmc_health_luci_js_deps "$custom_feed_dir/luci-app-emmc-health"; then
+        rm -rf "$custom_feed_dir"
+        return 1
+    fi
+
+    if ! sync_tingreader_packages_to_feed_dir \
+        "https://github.com/dqsq2e2/luci-app-tingreader.git" "main" \
+        "$custom_feed_dir" "dqsq2e2/luci-app-tingreader"; then
         rm -rf "$custom_feed_dir"
         return 1
     fi
