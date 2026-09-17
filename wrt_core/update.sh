@@ -154,6 +154,7 @@ stage_post_install_package_fixes() {
     fix_quectel_cm
     install_pbr_cmcc
     fix_pbr_ip_forward
+    apply_velocloud_feed_patches
     # apply_hash_fixes
 }
 
