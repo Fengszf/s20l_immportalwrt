@@ -1,22 +1,31 @@
 #!/bin/sh
 
-IEEE_PATH="/sys/class/ieee80211"
-THERMAL_PATH="/sys/class/thermal"
+# velo5x0 edition: read CPU (coretemp) and WiFi (ath10k_hwmon) temps by
+# hwmon device name. coreboot has no ACPI thermal zones and the ath10k
+# hwmon does not always sit under /sys/class/ieee80211, so the stock
+# script found neither sensor on this board.
 
-if grep -Eq "ipq40xx|ipq806x" "/etc/openwrt_release"; then
-	wifi_temp="$(awk '{printf("%.1f°C ", $0 / 1000)}' "$IEEE_PATH"/phy*/device/hwmon/hwmon*/temp1_input 2>"/dev/null" | awk '$1=$1')"
-else
-	wifi_temp="$(cat "$IEEE_PATH"/phy*/hwmon*/temp1_input 2>"/dev/null" | awk '{printf("%.1f°C ", $0 / 1000)}' | awk '$1=$1')"
-fi
+cpu_temp=""
+wifi_temp=""
 
-if grep -q "ipq40xx" "/etc/openwrt_release"; then
-	if [ -e "$IEEE_PATH/phy0/hwmon0/temp1_input" ]; then
-		mt76_temp="$(awk -F ': ' '{print $2}' "$IEEE_PATH/phy0/hwmon0/temp1_input" 2>"/dev/null")°C"
-	fi
-	[ -z "$mt76_temp" ] || wifi_temp="${wifi_temp:+$wifi_temp }$mt76_temp"
-else
-	cpu_temp="$(awk '{printf("%.1f°C", $0 / 1000)}' "$THERMAL_PATH/thermal_zone0/temp" 2>"/dev/null")"
-fi
+for h in /sys/class/hwmon/hwmon*; do
+	name=$(cat "$h/name" 2>/dev/null)
+	case "$name" in
+	coretemp)
+		for t in "$h"/temp*_input; do
+			v=$(cat "$t" 2>/dev/null) || continue
+			[ "$v" -gt "${cmax:-0}" ] && cmax=$v
+		done
+		;;
+	ath10k_hwmon)
+		v=$(cat "$h"/temp1_input 2>/dev/null)
+		[ -n "$v" ] && wmax=$v
+		;;
+	esac
+done
+
+[ -n "$cmax" ] && cpu_temp="$(awk -v v="$cmax" 'BEGIN{printf("%.1f°C", v / 1000)}')"
+[ -n "$wmax" ] && wifi_temp="$(awk -v v="$wmax" 'BEGIN{printf("%.1f°C", v / 1000)}')"
 
 if [ -n "$cpu_temp" ] && [ -z "$wifi_temp" ]; then
 	echo -n "CPU: $cpu_temp"

@@ -105,6 +105,14 @@ fix_default_set() {
             \cp -f "$BASE_PATH/patches/tempinfo" "$BUILD_DIR/package/emortal/autocore/files/tempinfo"
         fi
     fi
+
+    # velocloud_5x0: istore home-page CPU temperature fallback (coreboot has
+    # no thermal_zone0; C2558 coretemp exposes only temp2..temp5)
+    if [ -f "$BUILD_DIR/feeds/custom_feed/luci-app-quickstart/luasrc/controller/istore_backend.lua" ]; then
+        if [ -f "$BASE_PATH/patches/istore_backend.lua" ]; then
+            \cp -f "$BASE_PATH/patches/istore_backend.lua" "$BUILD_DIR/feeds/custom_feed/luci-app-quickstart/luasrc/controller/istore_backend.lua"
+        fi
+    fi
 }
 
 
