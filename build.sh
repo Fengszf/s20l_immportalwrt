@@ -564,6 +564,13 @@ fi
 DOCKER_STACK_PATCHES_ENABLED="$DOCKER_STACK_PATCHES_ENABLED" \
     "$BASE_PATH/update.sh" "$REPO_URL" "$REPO_BRANCH" "$BUILD_DIR" "$COMMIT_HASH"
 
+# 机型 files 覆盖层：wrt_core/files/<机型名>/ → 构建树 files/
+if [[ -d "$BASE_PATH/files/$Dev" ]]; then
+    mkdir -p "$BASE_PATH/../$BUILD_DIR/files"
+    cp -a "$BASE_PATH/files/$Dev/." "$BASE_PATH/../$BUILD_DIR/files/"
+    echo "已注入机型 files 覆盖层: files/$Dev"
+fi
+
 apply_config
 print_config_fragment_summary
 remove_uhttpd_dependency
