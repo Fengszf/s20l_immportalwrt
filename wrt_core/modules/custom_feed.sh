@@ -331,7 +331,7 @@ install_custom_feed() {
     local required_feed_dirs=(
         cups tcping v2ray-geodata taskd luci-lib-xterm luci-lib-taskd luci-app-store
         luci-app-openclash
-        luci-app-quickstart luci-app-homeproxy luci-app-mosdns
+        luci-app-quickstart luci-app-homeproxy luci-app-mosdns geo2txt
         luci-app-passwall nikki luci-app-nikki mihomo-meta
         open-app-filter luci-app-oaf lucky luci-app-lucky luci-app-easytier
         luci-app-emmc-health luci-app-wolultra luci-app-mini-diskmanager
@@ -451,6 +451,11 @@ install_custom_feed() {
     fi
 
     if ! sync_repo_root_package_to_feed_dir "https://github.com/adminchenyu/eMMC-Health.git" "main" "$custom_feed_dir" "adminchenyu/eMMC-Health" "luci-app-emmc-health"; then
+        rm -rf "$custom_feed_dir"
+        return 1
+    fi
+
+    if ! sync_repo_root_package_to_feed_dir "https://github.com/sbwml/geo2txt.git" "main" "$custom_feed_dir" "sbwml/geo2txt" "geo2txt"; then
         rm -rf "$custom_feed_dir"
         return 1
     fi
