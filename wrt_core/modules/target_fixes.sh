@@ -100,9 +100,13 @@ fix_default_set() {
     install -Dm544 "$BASE_PATH/patches/991_custom_settings" "$BUILD_DIR/package/base-files/files/etc/uci-defaults/991_custom_settings"
     install -Dm544 "$BASE_PATH/patches/992_set-wifi-uci.sh" "$BUILD_DIR/package/base-files/files/etc/uci-defaults/992_set-wifi-uci.sh"
 
-    if [ -f "$BUILD_DIR/package/emortal/autocore/files/tempinfo" ]; then
-        if [ -f "$BASE_PATH/patches/tempinfo" ]; then
-            \cp -f "$BASE_PATH/patches/tempinfo" "$BUILD_DIR/package/emortal/autocore/files/tempinfo"
+    if [ -f "$BUILD_DIR/package/emortal/autocore/files/tempinfo" ] && [ -f "$BASE_PATH/patches/autocore-tempinfo-hwmon.patch" ]; then
+        if (cd "$BUILD_DIR" && patch -p1 -R --dry-run -s < "$BASE_PATH/patches/autocore-tempinfo-hwmon.patch") 2>/dev/null; then
+            : # already applied
+        elif (cd "$BUILD_DIR" && patch -p1 -N -r - -s < "$BASE_PATH/patches/autocore-tempinfo-hwmon.patch"); then
+            echo "Applied autocore-tempinfo-hwmon patch"
+        else
+            echo "WARNING: autocore-tempinfo-hwmon.patch failed to apply cleanly - rebase needed" >&2
         fi
     fi
 }

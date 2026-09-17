@@ -1,0 +1,29 @@
+--- a/package/emortal/autocore/files/tempinfo
++++ b/package/emortal/autocore/files/tempinfo
+@@ -37,6 +37,26 @@
+ 	;;
+ esac
+ 
++# Fallback: read sensors by hwmon driver name when the paths above found
++# nothing (no ACPI thermal zone, radio hwmon not under ieee80211).
++if [ -z "$cpu_temp" ]; then
++	for h in /sys/class/hwmon/hwmon*; do
++		[ "$(cat "$h/name" 2>/dev/null)" = "coretemp" ] || continue
++		for t in "$h"/temp*_input; do
++			v=$(cat "$t" 2>/dev/null) || continue
++			[ "$v" -gt "${cmax:-0}" ] && cmax=$v
++		done
++	done
++	[ -n "$cmax" ] && cpu_temp="$(awk -v v="$cmax" 'BEGIN{printf("%.1f°C", v / 1000)}')"
++fi
++if [ -z "$wifi_temp" ]; then
++	for h in /sys/class/hwmon/hwmon*; do
++		[ "$(cat "$h/name" 2>/dev/null)" = "ath10k_hwmon" ] || continue
++		v=$(cat "$h/temp1_input" 2>/dev/null) && wmax=$v
++	done
++	[ -n "$wmax" ] && wifi_temp="$(awk -v v="$wmax" 'BEGIN{printf("%.1f°C", v / 1000)}')"
++fi
++
+ if [ -n "$cpu_temp" ] && [ -n "$wifi_temp" ]; then
+ 	echo -n "CPU: $cpu_temp WiFi: $wifi_temp"
+ elif [ -n "$cpu_temp" ] && [ -z "$wifi_temp" ]; then
