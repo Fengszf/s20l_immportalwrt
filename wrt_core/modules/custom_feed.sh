@@ -319,7 +319,7 @@ install_custom_feed() {
 
     local base_custom_feed_packages=(
         xray-core xray-plugin dns2tcp dns2socks haproxy hysteria \
-        naiveproxy shadowsocks-rust sing-box v2ray-core v2ray-geodata geoview v2ray-plugin \
+        naiveproxy shadowsocks-rust sing-box v2ray-core v2ray-geodata geoview v2ray-plugin geo2txt \
         tuic-client chinadns-ng ipt2socks tcping trojan-plus simple-obfs shadowsocksr-libev \
         v2dat adguardhome luci-app-adguardhome ddns-go \
         luci-app-ddns-go quickstart \
@@ -451,11 +451,6 @@ install_custom_feed() {
     fi
 
     if ! sync_repo_root_package_to_feed_dir "https://github.com/adminchenyu/eMMC-Health.git" "main" "$custom_feed_dir" "adminchenyu/eMMC-Health" "luci-app-emmc-health"; then
-        rm -rf "$custom_feed_dir"
-        return 1
-    fi
-
-    if ! sync_repo_root_package_to_feed_dir "https://github.com/sbwml/geo2txt.git" "main" "$custom_feed_dir" "sbwml/geo2txt" "geo2txt"; then
         rm -rf "$custom_feed_dir"
         return 1
     fi
