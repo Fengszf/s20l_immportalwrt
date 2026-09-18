@@ -174,6 +174,18 @@ apply_custom_feed_patches() {
         sed -i "s/default = '600'/default = 'normal'/; s/o.default='600'/o.default='normal'/" "$argon_js"
         echo "Patched argon-config form default font -> normal"
     fi
+
+    # smartdns 1.2025.47: git-repack tarball is on no mirror and its hash is
+    # not reproducible across toolchains; fetch the commit tarball from
+    # codeload instead (identical bytes everywhere). Self-retires when the
+    # feed bumps the version (grep guard stops matching).
+    local sd_mk="$BUILD_DIR/feeds/packages/net/smartdns/Makefile"
+    if [ -f "$sd_mk" ] && [ -f "$BASE_PATH/patches/smartdns-codeload.patch" ] \
+        && ! grep -q "codeload.github.com/pymumu/smartdns" "$sd_mk"; then
+        (cd "$BUILD_DIR/feeds/packages/net/smartdns" && patch -p1 -N -r - -s < "$BASE_PATH/patches/smartdns-codeload.patch") \
+            && echo "Applied smartdns codeload patch" \
+            || echo "WARNING: smartdns-codeload.patch failed to apply cleanly - rebase needed" >&2
+    fi
 }
 
 
