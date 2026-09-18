@@ -1,0 +1,20 @@
+--- a/session.c
++++ b/session.c
+@@ -1204,6 +1204,17 @@
+ 	rpc_login_setup_acls(ses, login);
+ 
+ 	rpc_session_set(ses, tb[RPC_L_USERNAME]);
++
++	/* compat: legacy iStoreOS backends expect values.token (== session id) */
++	{
++		struct blob_buf b = {};
++
++		blob_buf_init(&b, 0);
++		blobmsg_add_string(&b, "token", ses->id);
++		rpc_session_set(ses, blob_data(b.head));
++		blob_buf_free(&b);
++	}
++
+ 	rpc_session_dump(ses, ctx, req);
+ 
+ out:

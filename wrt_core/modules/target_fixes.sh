@@ -109,6 +109,15 @@ fix_default_set() {
             echo "WARNING: autocore-tempinfo-hwmon.patch failed to apply cleanly - rebase needed" >&2
         fi
     fi
+
+    # rpcd: legacy iStoreOS backends (quickstartd) require values.token in
+    # session data. Dropping the patch file into the package's patches/ dir
+    # lets the package build apply it to the extracted source.
+    if [ -d "$BUILD_DIR/package/system/rpcd" ] && [ -f "$BASE_PATH/patches/rpcd-session-values-token.patch" ]; then
+        mkdir -p "$BUILD_DIR/package/system/rpcd/patches"
+        \cp -f "$BASE_PATH/patches/rpcd-session-values-token.patch" \
+            "$BUILD_DIR/package/system/rpcd/patches/999-session-values-token.patch"
+    fi
 }
 
 # velocloud_5x0: applied in stage_post_install_package_fixes (after feeds are
