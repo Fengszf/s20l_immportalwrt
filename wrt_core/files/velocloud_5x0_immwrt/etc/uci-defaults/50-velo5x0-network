@@ -39,24 +39,11 @@ set network.wan_sfp2.device='eth3'
 set network.wan_sfp2.metric='30'
 UCI
 uci commit network
-# put the SFP WANs in the wan firewall zone, and open SSH/LuCI on the wan
-# side for bench management (close these if the box faces untrusted networks)
+# put the SFP WANs in the wan firewall zone
 if ! uci -q get firewall.@zone[1].network | grep -q wan_sfp1; then
 	uci -q batch <<'UCI'
 add_list firewall.@zone[1].network='wan_sfp1'
 add_list firewall.@zone[1].network='wan_sfp2'
-set firewall.ssh_wan=rule
-set firewall.ssh_wan.name='Allow-SSH-WAN'
-set firewall.ssh_wan.src='wan'
-set firewall.ssh_wan.dest_port='22'
-set firewall.ssh_wan.proto='tcp'
-set firewall.ssh_wan.target='ACCEPT'
-set firewall.luci_wan=rule
-set firewall.luci_wan.name='Allow-LuCI-WAN'
-set firewall.luci_wan.src='wan'
-set firewall.luci_wan.dest_port='80 443'
-set firewall.luci_wan.proto='tcp'
-set firewall.luci_wan.target='ACCEPT'
 UCI
 	uci commit firewall
 fi
