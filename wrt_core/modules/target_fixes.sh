@@ -155,6 +155,14 @@ apply_custom_feed_patches() {
         echo "Patched quickstart index.js appfilter -> oaf link"
     fi
 
+    # Port card treats only linkState=="DOWN" as disconnected, so DSA slave
+    # ports (LOWERLAYERDOWN without cable) render as connected. UP = connected,
+    # everything else = disconnected.
+    if [ -f "$qs_js" ] && grep -q 'linkState=="DOWN"' "$qs_js"; then
+        sed -i 's|linkState=="DOWN"|linkState!="UP"|g' "$qs_js"
+        echo "Patched quickstart index.js linkState disconnected check"
+    fi
+
     # argon base font is 0.975rem (15.6px vs bootstrap 13px); use 0.875rem
     # (14px). The sidenav brand title (1.8rem) overflows its column; use
     # 1.4rem. Match bare values: upstream ships both minified and formatted
