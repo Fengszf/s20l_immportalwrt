@@ -1,0 +1,18 @@
+--- a/Makefile
++++ b/Makefile
+@@ -48,7 +48,6 @@
+ 	$(INSTALL_DIR) $(1)/usr/bin $(1)/etc/init.d
+ 	$(INSTALL_DIR) $(1)/etc/fwxd
+ 	$(INSTALL_DIR) $(1)/etc/config
+-	$(INSTALL_DIR) $(1)/usr/share/rpcd/acl.d/
+ 	$(INSTALL_DATA) ./files/feature.bin $(1)/etc/fwxd/feature.bin
+ 	$(INSTALL_DATA) ./files/custom_feature.cfg $(1)/etc/fwxd/custom_feature.cfg
+ 	$(INSTALL_BIN) ./files/appfilter.init $(1)/etc/init.d/appfilter
+@@ -56,7 +55,6 @@
+ 	$(INSTALL_BIN) ./files/rule_manager.lua $(1)/usr/bin/rule_manager
+ 	$(INSTALL_BIN) ./files/hnat.sh $(1)/usr/bin/hnat.sh
+ 	$(INSTALL_DATA) ./files/oaf_version $(1)/etc/oaf_version
+-	$(INSTALL_DATA) ./files/luci-app-oaf.json $(1)/usr/share/rpcd/acl.d/
+ endef
+ 
+ 

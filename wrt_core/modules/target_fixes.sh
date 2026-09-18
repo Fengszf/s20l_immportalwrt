@@ -123,6 +123,20 @@ apply_velocloud_feed_patches() {
             && echo "Applied istore_backend.lua velocloud_5x0 patch" \
             || echo "WARNING: istore_backend-lua.patch failed to apply cleanly - rebase needed" >&2
     fi
+
+    # appfilter bundles the LuCI ACL json that luci-app-oaf also ships;
+    # apk rejects the duplicate file. The LuCI app is the proper owner.
+    local oaf_mk="$BUILD_DIR/feeds/custom_feed/open-app-filter/Makefile"
+    if [ -f "$oaf_mk" ] && [ -f "$BASE_PATH/patches/open-app-filter-no-bundled-acl.patch" ]; then
+        if (cd "$BUILD_DIR/feeds/custom_feed/open-app-filter" && patch -p1 -N -r - -s < "$BASE_PATH/patches/open-app-filter-no-bundled-acl.patch"); then
+            echo "Applied open-app-filter no-bundled-acl patch"
+            # force rebuild+repackage: drop build dir and the stale apk
+            rm -rf "$BUILD_DIR"/build_dir/target-*/open-app-filter* 2>/dev/null
+            rm -f "$BUILD_DIR"/bin/packages/*/custom_feed/appfilter-*.apk 2>/dev/null
+        else
+            echo "WARNING: open-app-filter-no-bundled-acl.patch failed to apply cleanly - rebase needed" >&2
+        fi
+    fi
 }
 
 
