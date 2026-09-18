@@ -526,14 +526,25 @@ preflight_download_sources() {
     fi
 
     if (( download_failed != 0 )); then
-        echo "Error: 源码包预下载或校验失败，已在正式编译前停止。" >&2
+        echo "源码包预下载出现问题，逐包重试中..." >&2
         grep -E "$failure_pattern" "$download_log" | tail -n 30 >&2 || true
         retry_failed_downloads_verbose "$download_log"
+        # 重试成功的包已进入 dl/ 缓存，全量复查成本很低；仍有失败才中止。
+        local recheck_log
+        recheck_log=$(mktemp)
+        if make download -j"$download_jobs" > "$recheck_log" 2>&1 \
+            && ! grep -Eq "$failure_pattern" "$recheck_log"; then
+            echo "逐包重试成功，源码包预下载与校验通过，继续编译。"
+            rm -f "$download_log" "$recheck_log"
+            return 0
+        fi
+        echo "Error: 逐包重试后仍有源码包下载失败，已在正式编译前停止。" >&2
+        grep -E "$failure_pattern" "$recheck_log" | tail -n 30 >&2 || true
         if [[ -n ${GITHUB_STEP_SUMMARY:-} ]]; then
             echo "### 源码包预检失败" >> "$GITHUB_STEP_SUMMARY"
             echo "已在正式编译前停止，请查看 Build Firmware 步骤中的详细下载日志。" >> "$GITHUB_STEP_SUMMARY"
         fi
-        rm -f "$download_log"
+        rm -f "$download_log" "$recheck_log"
         return 1
     fi
 
