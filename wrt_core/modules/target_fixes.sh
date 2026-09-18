@@ -113,7 +113,7 @@ fix_default_set() {
 
 # velocloud_5x0: applied in stage_post_install_package_fixes (after feeds are
 # fully installed; running this earlier can silently miss the feed dir).
-apply_velocloud_feed_patches() {
+apply_custom_feed_patches() {
     # istore home-page CPU temperature fallback (coreboot has no
     # thermal_zone0; C2558 coretemp exposes only temp2..temp5). A reject here
     # means the feed file drifted - rebase the patch, don't shadow it.
