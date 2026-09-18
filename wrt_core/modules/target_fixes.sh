@@ -137,6 +137,14 @@ apply_velocloud_feed_patches() {
             echo "WARNING: open-app-filter-no-bundled-acl.patch failed to apply cleanly - rebase needed" >&2
         fi
     fi
+
+    # quickstart home tile links to /admin/services/appfilter, but luci-app-oaf
+    # registers /admin/services/oaf. Minified JS: sed is sturdier than a diff.
+    local qs_js="$BUILD_DIR/feeds/custom_feed/luci-app-quickstart/htdocs/luci-static/quickstart/index.js"
+    if [ -f "$qs_js" ] && grep -q "admin/services/appfilter" "$qs_js"; then
+        sed -i 's|admin/services/appfilter|admin/services/oaf|g' "$qs_js"
+        echo "Patched quickstart index.js appfilter -> oaf link"
+    fi
 }
 
 
