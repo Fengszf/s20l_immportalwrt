@@ -145,6 +145,35 @@ apply_velocloud_feed_patches() {
         sed -i 's|admin/services/appfilter|admin/services/oaf|g' "$qs_js"
         echo "Patched quickstart index.js appfilter -> oaf link"
     fi
+
+    # argon base font is 0.975rem (15.6px vs bootstrap 13px); use 0.875rem
+    # (14px). The sidenav brand title (1.8rem) overflows its column; use
+    # 1.4rem. Match bare values: upstream ships both minified and formatted
+    # variants of cascade.css and each value appears exactly once.
+    local argon_css="$BUILD_DIR/feeds/custom_feed/luci-theme-argon/htdocs/luci-static/argon/css/cascade.css"
+    if [ -f "$argon_css" ]; then
+        if grep -q "0\.975rem" "$argon_css"; then
+            sed -i 's/0\.975rem/0.875rem/g' "$argon_css"
+            echo "Patched argon base font-size 0.975rem -> 0.875rem"
+        fi
+        if grep -q "1\.8rem" "$argon_css"; then
+            sed -i 's/1\.8rem/1.4rem/g' "$argon_css"
+            echo "Patched argon sidenav brand 1.8rem -> 1.4rem"
+        fi
+    fi
+
+    # argon-config ships font_weight '600' (bold) as the default, both in the
+    # uci config and the settings form default; normal is the sane default.
+    local argon_cfg="$BUILD_DIR/feeds/custom_feed/luci-app-argon-config/root/etc/config/argon"
+    if [ -f "$argon_cfg" ] && grep -q "font_weight '600'" "$argon_cfg"; then
+        sed -i "s/option font_weight '600'/option font_weight 'normal'/" "$argon_cfg"
+        echo "Patched argon default font_weight 600 -> normal"
+    fi
+    local argon_js="$BUILD_DIR/feeds/custom_feed/luci-app-argon-config/htdocs/luci-static/resources/view/argon-config.js"
+    if [ -f "$argon_js" ] && grep -q "default = '600'\|o.default='600'" "$argon_js"; then
+        sed -i "s/default = '600'/default = 'normal'/; s/o.default='600'/o.default='normal'/" "$argon_js"
+        echo "Patched argon-config form default font -> normal"
+    fi
 }
 
 
