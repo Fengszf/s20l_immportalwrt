@@ -295,6 +295,65 @@ fix_mini_diskmanager_menu() {
 }
 
 
+fix_wolultra_menu() {
+    local package_dir="$1"
+    local menu_file="$package_dir/root/usr/share/luci/menu.d/luci-app-wolultra.json"
+
+    if [ -f "$menu_file" ]; then
+        python3 - "$menu_file" <<'PY'
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    new_data = {}
+    for k, v in data.items():
+        if k == "admin/control":
+            continue
+        new_k = k.replace("admin/control/wolultra", "admin/services/wolultra")
+        new_data[new_k] = v
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(new_data, f, indent="\t", ensure_ascii=False)
+except Exception as e:
+    sys.stderr.write(f"Error updating wolultra menu: {e}\n")
+    sys.exit(1)
+PY
+        echo "已将超级网络唤醒移至服务菜单，并移除管控菜单节点。"
+    fi
+}
+
+
+fix_netbird_menu() {
+    local package_dir="$1"
+    local menu_file="$package_dir/root/usr/share/luci/menu.d/luci-app-netbird.json"
+
+    if [ -f "$menu_file" ]; then
+        python3 - "$menu_file" <<'PY'
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    new_data = {}
+    new_data["admin/vpn"] = {
+        "title": "VPN",
+        "order": 45,
+        "action": {"type": "firstchild"}
+    }
+    for k, v in data.items():
+        new_k = k.replace("admin/services/netbird", "admin/vpn/netbird")
+        new_data[new_k] = v
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(new_data, f, indent="\t", ensure_ascii=False)
+except Exception as e:
+    sys.stderr.write(f"Error updating netbird menu: {e}\n")
+    sys.exit(1)
+PY
+        echo "已将 NetBird 客户端移动至 VPN 菜单。"
+    fi
+}
+
+
 register_local_feed_source() {
     local custom_feed_dir="$1"
     local feeds_path="$2"
@@ -335,8 +394,7 @@ install_custom_feed() {
         luci-app-passwall nikki luci-app-nikki mihomo-meta
         open-app-filter luci-app-oaf lucky luci-app-lucky luci-app-easytier
         luci-app-emmc-health luci-app-wolultra luci-app-mini-diskmanager
-        axonhub luci-app-axonhub gecoosac luci-app-gecoosac sing-box
-        tingreader luci-app-tingreader
+        gecoosac luci-app-gecoosac sing-box luci-app-netbird
     )
     local custom_feed_sources=()
     local missing_feed_dirs=()
@@ -368,6 +426,7 @@ install_custom_feed() {
         "sbwml/luci-app-mosdns|https://github.com/sbwml/luci-app-mosdns.git|v5|mosdns luci-app-mosdns"
         "Openwrt-Passwall/openwrt-passwall|https://github.com/Openwrt-Passwall/openwrt-passwall.git|main|luci-app-passwall"
         "nikkinikki-org/OpenWrt-nikki|https://github.com/nikkinikki-org/OpenWrt-nikki.git|main|nikki luci-app-nikki mihomo-meta"
+        "looong-cat/luci-app-netbird|https://github.com/looong-cat/luci-app-netbird.git|main|luci-app-netbird"
     )
 
     feeds_path=$(get_feeds_path)
@@ -450,19 +509,15 @@ install_custom_feed() {
         return 1
     fi
 
+    fix_wolultra_menu "$custom_feed_dir/luci-app-wolultra"
+    fix_netbird_menu "$custom_feed_dir/luci-app-netbird"
+
     if ! sync_repo_root_package_to_feed_dir "https://github.com/adminchenyu/eMMC-Health.git" "main" "$custom_feed_dir" "adminchenyu/eMMC-Health" "luci-app-emmc-health"; then
         rm -rf "$custom_feed_dir"
         return 1
     fi
 
     if ! fix_emmc_health_luci_js_deps "$custom_feed_dir/luci-app-emmc-health"; then
-        rm -rf "$custom_feed_dir"
-        return 1
-    fi
-
-    if ! sync_tingreader_packages_to_feed_dir \
-        "https://github.com/dqsq2e2/luci-app-tingreader.git" "main" \
-        "$custom_feed_dir" "dqsq2e2/luci-app-tingreader"; then
         rm -rf "$custom_feed_dir"
         return 1
     fi

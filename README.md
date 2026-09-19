@@ -57,17 +57,17 @@ cd wrt_release
 
 | 模式 | 命令示例 | 说明 |
 | --- | --- | --- |
-| 默认 | `./build.sh x64_immwrt` | 拉取源码、应用配置、下载依赖并完整编译固件。 |
-| `debug` | `./build.sh x64_immwrt debug` | 执行到 `make defconfig` 后停止，用于检查配置，不产出固件。 |
-| `container` | `./build.sh x64_immwrt container` | 使用 Docker 容器执行完整构建，减少本机环境差异。 |
-| `container_debug` | `./build.sh x64_immwrt container_debug` | 在 Docker 容器中执行 debug 流程并进入交互 shell。 |
-| `config_preview` | `./build.sh x64_immwrt config_preview` | 只预览配置片段组合，不拉取源码、不写构建目录。 |
+| 默认 | `./build.sh s20l_immwrt` | 拉取源码、应用配置、下载依赖并完整编译固件。 |
+| `debug` | `./build.sh s20l_immwrt debug` | 执行到 `make defconfig` 后停止，用于检查配置，不产出固件。 |
+| `container` | `./build.sh s20l_immwrt container` | 使用 Docker 容器执行完整构建，减少本机环境差异。 |
+| `container_debug` | `./build.sh s20l_immwrt container_debug` | 在 Docker 容器中执行 debug 流程并进入交互 shell。 |
+| `config_preview` | `./build.sh s20l_immwrt config_preview` | 只预览配置片段组合，不拉取源码、不写构建目录。 |
 
 可通过环境变量临时追加或移除配置片段：
 
 ```bash
-ADD_CONFIG_FRAGMENTS=docker_deps ./build.sh gemtek_w1701k_immwrt config_preview
-REMOVE_CONFIG_FRAGMENTS=proxy ./build.sh x64_immwrt config_preview
+ADD_CONFIG_FRAGMENTS=proxy ./build.sh s20l_immwrt config_preview
+REMOVE_CONFIG_FRAGMENTS=docker_deps ./build.sh s20l_immwrt config_preview
 ```
 
 GitHub Actions 的手动构建也提供 `add_fragments` 与 `remove_fragments` 输入项，语义与上述环境变量一致。
@@ -78,21 +78,16 @@ GitHub Actions 的手动构建也提供 `add_fragments` 与 `remove_fragments` �
 
 `.github/workflows/upstream_watch.yml` 每 6 小时错峰检查一次以下配置对应的上游源码分支，也可以手动指定单个配置或强制构建：
 
-- `MEDIATEK-WIFI-YES`
-- `MEDIATEK-WIFI-NO`
-- `clx_s20p_immwrt`
-- `jdcloud_ax6000_immwrt`
+- `s20l_immwrt`
 
 检测指纹由上游分支提交、设备配置、公共配置、有效 fragments 和共享构建脚本共同生成。只有不存在成功构建标记时才调用 Release 工作流；构建或发布失败不会写入标记。首次启用监听时会为尚无成功标记的配置执行一次构建。
 
 云编译空间策略：
 
-- 四个自动任务按顺序执行，避免多个大型多设备任务同时发布和写缓存。
 - Actions 缓存只保存 `.ccache`、host staging 和 toolchain staging，不保存目标 `build_dir`、目标 staging 或固件输出。
 - ccache 上限为 2 GiB；普通 Build 产物只保留 3 天。
-- `MEDIATEK-WIFI-YES/NO` 不再额外打包所有 kmod，避免在固件之外再次生成大型重复归档。
 - Release 上传后执行 `make clean` 并删除目标构建目录、目标 staging、`bin` 和临时发布目录，但保留可复用的 host/toolchain 缓存。
-- 四个监听配置各保留最近 2 个 Release；每周维护任务清理 14 天未使用的普通缓存、30 天前的已完成工作流记录，并为每个配置保留最近 5 个成功指纹标记。
+- 监听配置保留最近 2 个 Release；每周维护任务清理 14 天未使用的普通缓存、30 天前的已完成工作流记录，并保留最近 5 个成功指纹标记。
 
 ## 5. 支持设备
 
@@ -100,34 +95,13 @@ GitHub Actions 的手动构建也提供 `add_fragments` 与 `remove_fragments` �
 
 | 厂商 / 平台 | 设备 | 配置名 |
 | --- | --- | --- |
-| 京东云 | 雅典娜(02)、亚瑟(01)、太乙(07)、AX5(JDC版) | `jdcloud_ipq60xx_immwrt` |
-| 京东云 | 雅典娜(02)、亚瑟(01)、太乙(07)、AX5(JDC版) - LiBwrt | `jdcloud_ipq60xx_libwrt` |
-| 京东云 | 百里 / AX6000 | `jdcloud_ax6000_immwrt` |
-| CLX | S20P | `clx_s20p_immwrt` |
-| 阿里云 | AP8220 | `aliyun_ap8220_immwrt` |
-| 阿里云 | AP8220 - LiBwrt | `aliyun_ap8220_libwrt` |
-| Linksys | MX4200v1、MX4200v2、MX4300 | `linksys_mx4x00_immwrt` |
-| Link | NN6000v2 | `link_nn6000v2_immwrt` |
-| 奇虎 | 360v6 | `qihoo_360v6_immwrt` |
-| 红米 | AX5 | `redmi_ax5_immwrt` |
-| 红米 | AX6 | `redmi_ax6_immwrt` |
-| 红米 | AX6 - LiBwrt | `redmi_ax6_libwrt` |
-| 红米 | AX6000 | `redmi_ax6000_immwrt21` |
-| CMCC（中国移动） | RAX3000M | `cmcc_rax3000m_immwrt` |
-| MediaTek / Filogic | 67 个设备 Profile（保留 WiFi） | `MEDIATEK-WIFI-YES` |
-| MediaTek / Filogic | S20L、S20M、S20P、EX5700（移除 WiFi） | `MEDIATEK-WIFI-NO` |
-| 斐讯 | N1 | `n1_immwrt` |
-| 兆能 | M2 | `zn_m2_immwrt` |
-| 兆能 | M2 - LiBwrt | `zn_m2_libwrt` |
-| Gemtek | W1701K | `gemtek_w1701k_immwrt` |
-| x86 | X64 | `x64_immwrt` |
+| SuperGateway / MediaTek Filogic | S20L（保留 WiFi） | `s20l_immwrt` |
 
 示例：
 
 ```bash
-./build.sh jdcloud_ipq60xx_immwrt
-./build.sh aliyun_ap8220_libwrt
-./build.sh redmi_ax6_libwrt container
+./build.sh s20l_immwrt
+./build.sh s20l_immwrt container
 ```
 
 ## 6. 配置来源

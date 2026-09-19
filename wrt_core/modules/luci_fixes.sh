@@ -18,6 +18,53 @@ update_menu_location() {
     if [ -d "$(dirname "$tailscale_path")" ] && [ -f "$tailscale_path" ]; then
         sed -i 's/services/vpn/g' "$tailscale_path"
     fi
+
+    # 遍历构建树中所有 menu.d/*.json 配置文件进行全局菜单定位与清理
+    find "$BUILD_DIR" -type f -path "*/usr/share/luci/menu.d/*.json" 2>/dev/null | while read -r jf; do
+        [ -f "$jf" ] || continue
+
+        # 1. 彻底删除 diskman 菜单，消除磁盘阵列与 S.M.A.R.T 的入口
+        if [[ "$(basename "$jf")" == "luci-app-diskman.json" ]]; then
+            rm -f "$jf"
+            continue
+        fi
+
+        # 2. 超级网络唤醒移动至服务菜单
+        if [[ "$(basename "$jf")" == "luci-app-wolultra.json" ]]; then
+            sed -i 's#"admin/control/wolultra"#"admin/services/wolultra"#g' "$jf"
+            sed -i '/"admin\/control": {/,/^[[:space:]]*},/d' "$jf"
+        fi
+
+        # 3. NetBird 移动至 VPN 菜单并补全 admin/vpn 节点定义
+        if [[ "$(basename "$jf")" == "luci-app-netbird.json" ]]; then
+            python3 - "$jf" <<'PY' 2>/dev/null || true
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    new_data = {}
+    new_data["admin/vpn"] = {
+        "title": "VPN",
+        "order": 45,
+        "action": {"type": "firstchild"}
+    }
+    for k, v in data.items():
+        new_k = k.replace("admin/services/netbird", "admin/vpn/netbird")
+        new_data[new_k] = v
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(new_data, f, indent="\t", ensure_ascii=False)
+except Exception:
+    pass
+PY
+        fi
+
+        # 4. 全局清理残留的 admin/control (管控菜单) 与 admin/nas (NAS菜单)
+        sed -i 's#"admin/control/#"admin/services/#g' "$jf"
+        sed -i '/"admin\/control": {/,/^[[:space:]]*},/d' "$jf"
+        sed -i 's#"admin/nas/#"admin/services/#g' "$jf"
+        sed -i '/"admin\/nas": {/,/^[[:space:]]*},/d' "$jf"
+    done
 }
 
 

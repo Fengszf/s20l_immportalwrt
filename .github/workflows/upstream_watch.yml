@@ -8,14 +8,8 @@ on:
     branches:
       - main
     paths:
-      - "wrt_core/deconfig/MEDIATEK-WIFI-YES.config"
-      - "wrt_core/deconfig/MEDIATEK-WIFI-NO.config"
-      - "wrt_core/deconfig/clx_s20p_immwrt.config"
-      - "wrt_core/deconfig/jdcloud_ax6000_immwrt.config"
-      - "wrt_core/compilecfg/MEDIATEK-WIFI-YES.ini"
-      - "wrt_core/compilecfg/MEDIATEK-WIFI-NO.ini"
-      - "wrt_core/compilecfg/clx_s20p_immwrt.ini"
-      - "wrt_core/compilecfg/jdcloud_ax6000_immwrt.ini"
+      - "wrt_core/deconfig/s20l_immwrt.config"
+      - "wrt_core/compilecfg/s20l_immwrt.ini"
       - "wrt_core/deconfig/compile_base.config"
       - "wrt_core/deconfig/fragments/**"
       - "wrt_core/modules/**"
@@ -35,10 +29,7 @@ on:
         default: all
         options:
           - all
-          - MEDIATEK-WIFI-YES
-          - MEDIATEK-WIFI-NO
-          - clx_s20p_immwrt
-          - jdcloud_ax6000_immwrt
+          - s20l_immwrt
       force_build:
         description: Build even when the fingerprint was already released
         required: true
