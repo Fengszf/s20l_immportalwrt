@@ -326,6 +326,24 @@ PY
 fix_netbird_menu() {
     local package_dir="$1"
     local menu_file="$package_dir/root/usr/share/luci/menu.d/luci-app-netbird.json"
+    local makefile="$package_dir/Makefile"
+
+    if [ -f "$makefile" ]; then
+        python3 - "$makefile" <<'PY'
+import sys, re
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as f:
+        c = f.read()
+    c = re.sub(r',?\s*conntrack(\s*\([^)]*\))?', '', c)
+    c = re.sub(r'\+conntrack\b', '', c)
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(c)
+    print("已移除 NetBird 对 conntrack 的硬依赖。")
+except Exception as e:
+    sys.stderr.write(f"Error updating netbird makefile: {e}\n")
+PY
+    fi
 
     if [ -f "$menu_file" ]; then
         python3 - "$menu_file" <<'PY'
