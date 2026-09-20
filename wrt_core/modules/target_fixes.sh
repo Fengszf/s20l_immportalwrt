@@ -152,8 +152,10 @@ apply_custom_feed_patches() {
     # 2. 移除存储服务卡片与下载服务卡片
     # 3. 文件管理按钮及相关文件路径重定向至 luci-app-quickfile
     # 4. 修正 appfilter -> oaf 链接及 linkState 检测
-    local qs_js="$BUILD_DIR/feeds/custom_feed/luci-app-quickstart/htdocs/luci-static/quickstart/index.js"
-    if [ -f "$qs_js" ]; then
+    local qs_js_list
+    mapfile -t qs_js_list < <(find "$BUILD_DIR" -type f -path "*/luci-app-quickstart/htdocs/luci-static/quickstart/index.js" 2>/dev/null)
+    for qs_js in "${qs_js_list[@]}"; do
+        [ -f "$qs_js" ] || continue
         python3 - "$qs_js" <<'PY'
 import sys
 import re
@@ -190,9 +192,9 @@ content = content.replace("admin/services/appfilter", "admin/services/oaf")
 content = content.replace('linkState=="DOWN"', 'linkState!="UP"')
 
 p.write_text(content, encoding="utf-8")
-print("已成功对 quickstart index.js 应用定制补丁 (Lucky / 移除存储与下载卡片 / QuickFile 替换)。")
+print(f"已成功对 {p} 应用定制补丁 (Lucky / 移除存储与下载卡片 / QuickFile 替换)。")
 PY
-    fi
+    done
 
     # PPtP 协议名称统一修正为 PPTP
     local pptp_js="$BUILD_DIR/feeds/luci/protocols/luci-proto-ppp/htdocs/luci-static/resources/protocol/pptp.js"
