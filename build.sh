@@ -3,6 +3,9 @@
 set -e
 set -o pipefail
 
+# 隔离 Windows 挂载路径（防止 WSL 继承带有空格的 Windows PATH 导致 find -execdir 等工具报错）
+export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '^/mnt/[a-zA-Z]/' | paste -sd ':' -)
+
 # 定位 wrt_core，兼容仓库根目录或上级目录调用。
 if [ -d "wrt_core" ]; then
     WRT_CORE_PATH="wrt_core"
