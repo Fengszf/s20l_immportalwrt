@@ -199,7 +199,7 @@ update_dockerman() {
         git_retry sparse-checkout init --cone
         git_retry sparse-checkout set applications/luci-app-dockerman || return
 
-        git_retry checkout --quiet
+        git_retry checkout --quiet 6d4242ea || return
 
         mv applications/luci-app-dockerman ../luci-app-dockerman || return
         cd .. || return
