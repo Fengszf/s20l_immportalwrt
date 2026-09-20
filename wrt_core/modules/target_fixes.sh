@@ -148,10 +148,11 @@ apply_custom_feed_patches() {
     fi
 
     # quickstart 首页深度定制：
-    # 1. 远程域名卡片：将 DDNSTO 替换为 Lucky，并将远程配置与控制台指向 Lucky
-    # 2. 移除存储服务卡片与下载服务卡片
-    # 3. 文件管理按钮及相关文件路径重定向至 luci-app-quickfile
-    # 4. 修正 appfilter -> oaf 链接及 linkState 检测
+    # 1. 挂载 OpenClash 科学代理卡片与 Lucky 运维管理卡片
+    # 2. 移除冗余的存储服务卡片
+    # 3. 文件管理按钮直达 luci-app-quickfile
+    # 4. 修复小三角磁盘管理 404 错误 (diskman -> mini-diskmanager)
+    # 5. 修正 appfilter -> oaf 链接及 linkState 检测
     local qs_js_list
     mapfile -t qs_js_list < <(find "$BUILD_DIR" -type f -path "*/luci-app-quickstart/htdocs/luci-static/quickstart/index.js" 2>/dev/null)
     for qs_js in "${qs_js_list[@]}"; do
@@ -164,35 +165,67 @@ from pathlib import Path
 p = Path(sys.argv[1])
 content = p.read_text(encoding="utf-8", errors="ignore")
 
-# 1. DDNSTO -> Lucky
-content = content.replace("DDNSTO", "Lucky")
-content = content.replace("https://www.kooldns.cn/app/#/devices", "/cgi-bin/luci/admin/services/lucky")
-content = re.sub(r'b6\(\{url:p\.value\.ddnstoDomain\}\)', 'window.open("/cgi-bin/luci/admin/services/lucky", "_blank")', content)
-
-# 2. 移除存储服务卡片与下载服务卡片 (首页卡片列表 A)
-content = re.sub(r'f\.value\.storage&&R\.push\(\{key:"storage",component:[a-zA-Z0-9_$]+\}\),', '', content)
-content = re.sub(r'f\.value\.downloadService&&R\.push\(\{key:"downloadService",component:[a-zA-Z0-9_$]+\}\),', '', content)
-
-# 3. 移除存储服务与下载服务 (设置管理列表 R)
-content = re.sub(r'\{key:"storage",title:[a-zA-Z0-9_$]+\("\\u5B58\\u50A8\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u5171\\u4EAB\\u4E0E\\u5B58\\u50A8\\u670D\\u52A1\\u6982\\u89C8"\)\},', '', content)
-content = re.sub(r'\{key:"downloadService",title:[a-zA-Z0-9_$]+\("\\u4E0B\\u8F7D\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u4E0B\\u8F7D\\u4EFB\\u52A1\\u4E0E\\u670D\\u52A1\\u72B6\\u6001"\)\},', '', content)
-
-# 4. 文件管理按钮点击 -> 直接跳转打开 luci-app-quickfile
+# 1. 修复磁盘管理 404 错误与文件管理直达 quickfile
+content = content.replace("/cgi-bin/luci/admin/system/diskman", "/cgi-bin/luci/admin/system/mini-diskmanager")
 content = re.sub(
     r'zt\.installAndGo\("luci-app-linkease",[a-zA-Z0-9_$]+\("\\u6613\\u6709\\u4E91"\),"/cgi-bin/luci/admin/services/linkease/file/","app-meta-linkease"\)',
     r'window.open("/cgi-bin/luci/admin/system/quickfile", "_self")',
     content
 )
-
-# 5. 将所有残余的 linkease/file/ 链接替换为 quickfile
 content = content.replace("/cgi-bin/luci/admin/services/linkease/file/", "/cgi-bin/luci/admin/system/quickfile")
 
-# 6. 修正 appfilter -> oaf 链接及 linkState
+# 2. 定制 Lucky 卡片 (原 remoteDomain / s5)
+content = content.replace("DDNSTO", "Lucky")
+content = content.replace("https://www.kooldns.cn/app/#/devices", "/cgi-bin/luci/admin/services/lucky")
+content = re.sub(r'b6\(\{url:p\.value\.ddnstoDomain\}\)', 'window.open("/cgi-bin/luci/admin/services/lucky", "_blank")', content)
+content = content.replace(r'title:e(n)("\u8FDC\u7A0B\u57DF\u540D")', r'title:e(n)("Lucky 动态域名与反代")')
+content = content.replace(r'dt(" "+i(e(n)("\u57DF\u540D\u914D\u7F6E")),1)', r'dt(" "+i(e(n)("Lucky 配置")),1)')
+
+# 3. 将原 downloadService (n1) 改造为 OpenClash 卡片
+content = content.replace(r'title:e(n)("\u4E0B\u8F7D\u670D\u52A1")', r'title:e(n)("OpenClash 科学代理")')
+content = content.replace(r'i(e(n)("\u4E0B\u8F7D\u7BA1\u7406"))', r'i(e(n)("OpenClash 配置"))')
+content = re.sub(r'const\s+v=\(\)=>\{G\.Guide\.DownloadPartition\.List\.GET\(\)[^}]+\};', 'const v=()=>{window.open("/cgi-bin/luci/admin/services/openclash", "_self")};', content)
+content = content.replace(r'i(e(n)("Aria2\u9AD8\u7EA7\u914D\u7F6E"))', r'i(e(n)("OpenClash 控制台"))')
+content = content.replace(r'i(e(n)("qBittorrent\u9AD8\u7EA7\u914D\u7F6E"))', r'i(e(n)("Cloudflare 优选测速"))')
+content = content.replace(r'i(e(n)("Transmission\u9AD8\u7EA7\u914D\u7F6E"))', r'i(e(n)("NetBird 异地组网"))')
+content = re.sub(r'y=\(\)=>\{b\("app-meta-aria2","Aria2","/cgi-bin/luci/admin/services/aria2"\)\}', 'y=()=>{window.open("/cgi-bin/luci/admin/services/openclash", "_self")}', content)
+content = re.sub(r'f=\(\)=>\{b\("app-meta-qbittorrent","qBittorrent","/cgi-bin/luci/admin/nas/qBittorrent"\)\}', 'f=()=>{window.open("/cgi-bin/luci/admin/services/cloudflarespeedtest", "_self")}', content)
+content = re.sub(r'F=\(\)=>\{b\("app-meta-transmission","Transmission","/cgi-bin/luci/admin/services/transmission"\)\}', 'F=()=>{window.open("/cgi-bin/luci/admin/vpn/netbird", "_self")}', content)
+
+# 4. 移除 storage 相关的残留
+content = re.sub(r'f\.value\.storage&&R\.push\(\{key:"storage",component:[a-zA-Z0-9_$]+\}\),', '', content)
+content = re.sub(r'\{key:"storage",title:[a-zA-Z0-9_$]+\("\\u5B58\\u50A8\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u5171\\u4EAB\\u4E0E\\u5B58\\u50A8\\u670D\\u52A1\\u6982\\u89C8"\)\},', '', content)
+
+# 5. 确保在卡片数组 A 中挂载 OpenClash (n1) 和 Lucky (s5)
+content = re.sub(
+    r'f\.value\.downloadService&&R\.push\(\{key:"downloadService",component:[a-zA-Z0-9_$]+\}\)',
+    r'R.push({key:"openclash",component:n1})',
+    content
+)
+content = re.sub(
+    r'f\.value\.remoteDomain&&R\.push\(\{key:"remoteDomain",component:[a-zA-Z0-9_$]+\}\)',
+    r'R.push({key:"lucky",component:s5})',
+    content
+)
+
+# 6. 更新设置管理列表 R 中的文案
+content = re.sub(
+    r'\{key:"downloadService",title:[a-zA-Z0-9_$]+\("\\u4E0B\\u8F7D\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u4E0B\\u8F7D\\u4EFB\\u52A1\\u4E0E\\u670D\\u52A1\\u72B6\\u6001"\)\}',
+    r'{key:"openclash",title:n("OpenClash"),description:n("科学代理与智能分流")}',
+    content
+)
+content = re.sub(
+    r'\{key:"remoteDomain",title:[a-zA-Z0-9_$]+\("\\u8FDC\\u7A0B\\u57DF\\u540D"\),description:[a-zA-Z0-9_$]+\("\\u8FDC\\u7A0B\\u8BBF\\u95EE\\u57DF\\u540D\\u7BA1\\u7406"\)\}',
+    r'{key:"lucky",title:n("Lucky"),description:n("动态域名解析与反向代理")}',
+    content
+)
+
+# 7. 修正 appfilter -> oaf 链接及 linkState
 content = content.replace("admin/services/appfilter", "admin/services/oaf")
 content = content.replace('linkState=="DOWN"', 'linkState!="UP"')
 
 p.write_text(content, encoding="utf-8")
-print(f"已成功对 {p} 应用定制补丁 (Lucky / 移除存储与下载卡片 / QuickFile 替换)。")
+print(f"已成功对 {p} 应用定制补丁 (OpenClash + Lucky 卡片 / 修复 diskman 404 / QuickFile 替换)。")
 PY
     done
 
