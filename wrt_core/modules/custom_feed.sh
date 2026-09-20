@@ -400,7 +400,7 @@ install_custom_feed() {
         tuic-client chinadns-ng ipt2socks tcping simple-obfs shadowsocksr-libev \
         v2dat adguardhome luci-app-adguardhome ddns-go \
         luci-app-ddns-go quickstart \
-        luci-app-quickstart luci-app-istorex luci-app-cloudflarespeedtest netdata luci-app-netdata \
+        luci-app-quickstart luci-app-istorex cdnspeedtest luci-app-cloudflarespeedtest netdata luci-app-netdata \
         lucky luci-app-lucky luci-app-openclash luci-app-homeproxy luci-app-amlogic \
         oaf open-app-filter luci-app-oaf easytier luci-app-easytier \
         msd_lite luci-app-msd_lite cups luci-app-cupsd
@@ -413,6 +413,7 @@ install_custom_feed() {
         open-app-filter luci-app-oaf lucky luci-app-lucky luci-app-easytier
         luci-app-emmc-health luci-app-wolultra luci-app-mini-diskmanager
         gecoosac luci-app-gecoosac sing-box luci-app-netbird
+        cdnspeedtest luci-app-cloudflarespeedtest
     )
     local custom_feed_sources=()
     local missing_feed_dirs=()
