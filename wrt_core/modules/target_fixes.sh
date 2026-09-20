@@ -147,27 +147,51 @@ apply_custom_feed_patches() {
         fi
     fi
 
-    # quickstart home tile links to /admin/services/appfilter, but luci-app-oaf
-    # registers /admin/services/oaf. Minified JS: sed is sturdier than a diff.
+    # quickstart 首页深度定制：
+    # 1. 远程域名卡片：将 DDNSTO 替换为 Lucky，并将远程配置与控制台指向 Lucky
+    # 2. 移除存储服务卡片与下载服务卡片
+    # 3. 文件管理按钮及相关文件路径重定向至 luci-app-quickfile
+    # 4. 修正 appfilter -> oaf 链接及 linkState 检测
     local qs_js="$BUILD_DIR/feeds/custom_feed/luci-app-quickstart/htdocs/luci-static/quickstart/index.js"
     if [ -f "$qs_js" ]; then
-        if grep -q "admin/services/appfilter" "$qs_js"; then
-            sed -i 's|admin/services/appfilter|admin/services/oaf|g' "$qs_js"
-            echo "Patched quickstart index.js appfilter -> oaf link"
-        fi
+        python3 - "$qs_js" <<'PY'
+import sys
+import re
+from pathlib import Path
 
-        if grep -q 'linkState=="DOWN"' "$qs_js"; then
-            sed -i 's|linkState=="DOWN"|linkState!="UP"|g' "$qs_js"
-            echo "Patched quickstart index.js linkState disconnected check"
-        fi
+p = Path(sys.argv[1])
+content = p.read_text(encoding="utf-8", errors="ignore")
 
-        # 远程域名卡片：将 DDNSTO 替换为 Lucky，并将远程配置与控制台指向 Lucky
-        if grep -q "DDNSTO" "$qs_js"; then
-            sed -i 's|DDNSTO|Lucky|g' "$qs_js"
-            sed -i 's|https://www.kooldns.cn/app/#/devices|/cgi-bin/luci/admin/services/lucky|g' "$qs_js"
-            sed -i 's|b6({url:p\.value\.ddnstoDomain})|window.open("/cgi-bin/luci/admin/services/lucky", "_blank")|g' "$qs_js"
-            echo "Patched quickstart index.js DDNSTO -> Lucky"
-        fi
+# 1. DDNSTO -> Lucky
+content = content.replace("DDNSTO", "Lucky")
+content = content.replace("https://www.kooldns.cn/app/#/devices", "/cgi-bin/luci/admin/services/lucky")
+content = re.sub(r'b6\(\{url:p\.value\.ddnstoDomain\}\)', 'window.open("/cgi-bin/luci/admin/services/lucky", "_blank")', content)
+
+# 2. 移除存储服务卡片与下载服务卡片 (首页卡片列表 A)
+content = re.sub(r'f\.value\.storage&&R\.push\(\{key:"storage",component:[a-zA-Z0-9_$]+\}\),', '', content)
+content = re.sub(r'f\.value\.downloadService&&R\.push\(\{key:"downloadService",component:[a-zA-Z0-9_$]+\}\),', '', content)
+
+# 3. 移除存储服务与下载服务 (设置管理列表 R)
+content = re.sub(r'\{key:"storage",title:[a-zA-Z0-9_$]+\("\\u5B58\\u50A8\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u5171\\u4EAB\\u4E0E\\u5B58\\u50A8\\u670D\\u52A1\\u6982\\u89C8"\)\},', '', content)
+content = re.sub(r'\{key:"downloadService",title:[a-zA-Z0-9_$]+\("\\u4E0B\\u8F7D\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u4E0B\\u8F7D\\u4EFB\\u52A1\\u4E0E\\u670D\\u52A1\\u72B6\\u6001"\)\},', '', content)
+
+# 4. 文件管理按钮点击 -> 直接跳转打开 luci-app-quickfile
+content = re.sub(
+    r'zt\.installAndGo\("luci-app-linkease",[a-zA-Z0-9_$]+\("\\u6613\\u6709\\u4E91"\),"/cgi-bin/luci/admin/services/linkease/file/","app-meta-linkease"\)',
+    r'window.open("/cgi-bin/luci/admin/system/quickfile", "_self")',
+    content
+)
+
+# 5. 将所有残余的 linkease/file/ 链接替换为 quickfile
+content = content.replace("/cgi-bin/luci/admin/services/linkease/file/", "/cgi-bin/luci/admin/system/quickfile")
+
+# 6. 修正 appfilter -> oaf 链接及 linkState
+content = content.replace("admin/services/appfilter", "admin/services/oaf")
+content = content.replace('linkState=="DOWN"', 'linkState!="UP"')
+
+p.write_text(content, encoding="utf-8")
+print("已成功对 quickstart index.js 应用定制补丁 (Lucky / 移除存储与下载卡片 / QuickFile 替换)。")
+PY
     fi
 
     # PPtP 协议名称统一修正为 PPTP
