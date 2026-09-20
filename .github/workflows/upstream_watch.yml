@@ -2,8 +2,9 @@ name: Upstream Watch
 run-name: Upstream Watch - ${{ inputs.model || 'scheduled' }}
 
 on:
-  schedule:
-    - cron: "17 */6 * * *"
+  # 取消定时巡检编译，仅在代码提交推送或手动触发时执行
+  # schedule:
+  #   - cron: "17 */6 * * *"
   push:
     branches:
       - main

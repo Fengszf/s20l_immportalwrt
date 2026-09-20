@@ -150,17 +150,31 @@ apply_custom_feed_patches() {
     # quickstart home tile links to /admin/services/appfilter, but luci-app-oaf
     # registers /admin/services/oaf. Minified JS: sed is sturdier than a diff.
     local qs_js="$BUILD_DIR/feeds/custom_feed/luci-app-quickstart/htdocs/luci-static/quickstart/index.js"
-    if [ -f "$qs_js" ] && grep -q "admin/services/appfilter" "$qs_js"; then
-        sed -i 's|admin/services/appfilter|admin/services/oaf|g' "$qs_js"
-        echo "Patched quickstart index.js appfilter -> oaf link"
+    if [ -f "$qs_js" ]; then
+        if grep -q "admin/services/appfilter" "$qs_js"; then
+            sed -i 's|admin/services/appfilter|admin/services/oaf|g' "$qs_js"
+            echo "Patched quickstart index.js appfilter -> oaf link"
+        fi
+
+        if grep -q 'linkState=="DOWN"' "$qs_js"; then
+            sed -i 's|linkState=="DOWN"|linkState!="UP"|g' "$qs_js"
+            echo "Patched quickstart index.js linkState disconnected check"
+        fi
+
+        # 远程域名卡片：将 DDNSTO 替换为 Lucky，并将远程配置与控制台指向 Lucky
+        if grep -q "DDNSTO" "$qs_js"; then
+            sed -i 's|DDNSTO|Lucky|g' "$qs_js"
+            sed -i 's|https://www.kooldns.cn/app/#/devices|/cgi-bin/luci/admin/services/lucky|g' "$qs_js"
+            sed -i 's|b6({url:p\.value\.ddnstoDomain})|window.open("/cgi-bin/luci/admin/services/lucky", "_blank")|g' "$qs_js"
+            echo "Patched quickstart index.js DDNSTO -> Lucky"
+        fi
     fi
 
-    # Port card treats only linkState=="DOWN" as disconnected, so DSA slave
-    # ports (LOWERLAYERDOWN without cable) render as connected. UP = connected,
-    # everything else = disconnected.
-    if [ -f "$qs_js" ] && grep -q 'linkState=="DOWN"' "$qs_js"; then
-        sed -i 's|linkState=="DOWN"|linkState!="UP"|g' "$qs_js"
-        echo "Patched quickstart index.js linkState disconnected check"
+    # PPtP 协议名称统一修正为 PPTP
+    local pptp_js="$BUILD_DIR/feeds/luci/protocols/luci-proto-ppp/htdocs/luci-static/resources/protocol/pptp.js"
+    if [ -f "$pptp_js" ] && grep -q "_('PPtP')" "$pptp_js"; then
+        sed -i "s/_('PPtP')/_('PPTP')/g" "$pptp_js"
+        echo "Patched pptp.js protocol label PPtP -> PPTP"
     fi
 
     # argon base font is 0.975rem (15.6px vs bootstrap 13px); use 0.875rem
