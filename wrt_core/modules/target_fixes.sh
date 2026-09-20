@@ -229,6 +229,9 @@ print(f"已成功对 {p} 应用定制补丁 (OpenClash + Lucky 卡片 / 修复 d
 PY
     done
 
+    # 智能随动主题设置菜单（Argon / Aurora 随当前生效主题自适应显示，统一标题为“主题设置”）
+    fix_theme_config_menus
+
     # PPtP 协议名称统一修正为 PPTP
     local pptp_js="$BUILD_DIR/feeds/luci/protocols/luci-proto-ppp/htdocs/luci-static/resources/protocol/pptp.js"
     if [ -f "$pptp_js" ] && grep -q "_('PPtP')" "$pptp_js"; then
@@ -498,3 +501,56 @@ fix_rust_compile_error() {
         sed -i 's/download-ci-llvm=true/download-ci-llvm=false/g' "$BUILD_DIR/feeds/packages/lang/rust/Makefile"
     fi
 }
+
+
+fix_theme_config_menus() {
+    # 统一主题设置菜单并实现根据当前激活主题智能随动显隐
+    local argon_menus
+    mapfile -t argon_menus < <(find "$BUILD_DIR" -type f -path "*/luci-app-argon-config/*/menu.d/*.json" 2>/dev/null)
+    for f in "${argon_menus[@]}"; do
+        [ -f "$f" ] || continue
+        python3 - "$f" <<'PY'
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as fp:
+        data = json.load(fp)
+    for k, v in data.items():
+        v["title"] = "主题设置"
+        v["order"] = 90
+        v["depends"] = {
+            "uci": { "luci": { "main": { "mediaurlbase": "/luci-static/argon" } } }
+        }
+    with open(path, 'w', encoding='utf-8') as fp:
+        json.dump(data, fp, indent="\t", ensure_ascii=False)
+    print(f"已更新 {path} 为 Argon 智能随动菜单。")
+except Exception as e:
+    sys.stderr.write(f"Error updating argon menu: {e}\n")
+PY
+    done
+
+    local aurora_menus
+    mapfile -t aurora_menus < <(find "$BUILD_DIR" -type f -path "*/luci-app-aurora-config/*/menu.d/*.json" 2>/dev/null)
+    for f in "${aurora_menus[@]}"; do
+        [ -f "$f" ] || continue
+        python3 - "$f" <<'PY'
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path, 'r', encoding='utf-8') as fp:
+        data = json.load(fp)
+    for k, v in data.items():
+        v["title"] = "主题设置"
+        v["order"] = 90
+        v["depends"] = {
+            "uci": { "luci": { "main": { "mediaurlbase": "/luci-static/aurora" } } }
+        }
+    with open(path, 'w', encoding='utf-8') as fp:
+        json.dump(data, fp, indent="\t", ensure_ascii=False)
+    print(f"已更新 {path} 为 Aurora 智能随动菜单。")
+except Exception as e:
+    sys.stderr.write(f"Error updating aurora menu: {e}\n")
+PY
+    done
+}
+
