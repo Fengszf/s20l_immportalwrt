@@ -540,11 +540,12 @@ try:
     with open(path, 'r', encoding='utf-8') as fp:
         data = json.load(fp)
     for k, v in data.items():
-        v["title"] = "主题设置"
-        v["order"] = 90
-        v["depends"] = {
-            "uci": { "luci": { "main": { "mediaurlbase": "/luci-static/aurora" } } }
-        }
+        if k == "admin/system/aurora":
+            v["title"] = "主题设置"
+            v["order"] = 90
+            v["depends"] = {
+                "uci": { "luci": { "main": { "mediaurlbase": "/luci-static/aurora" } } }
+            }
     with open(path, 'w', encoding='utf-8') as fp:
         json.dump(data, fp, indent="\t", ensure_ascii=False)
     print(f"已更新 {path} 为 Aurora 智能随动菜单。")
