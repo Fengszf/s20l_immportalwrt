@@ -510,54 +510,191 @@ fix_rust_compile_error() {
 
 
 fix_theme_config_menus() {
-    # 统一主题设置菜单并实现根据当前激活主题智能随动显隐
-    local argon_menus
-    mapfile -t argon_menus < <(find "$BUILD_DIR" -type f -path "*/luci-app-argon-config/*/menu.d/*.json" 2>/dev/null)
-    for f in "${argon_menus[@]}"; do
-        [ -f "$f" ] || continue
-        python3 - "$f" <<'PY'
-import json, sys
-path = sys.argv[1]
-try:
-    with open(path, 'r', encoding='utf-8') as fp:
-        data = json.load(fp)
-    for k, v in data.items():
-        v["title"] = "主题设置"
-        v["order"] = 90
-        v["depends"] = {
-            "uci": { "luci": { "main": { "mediaurlbase": "/luci-static/argon" } } }
+    echo "正在配置主题菜单智能随动与视图隔离逻辑..."
+
+    # 1. 核心层：在 ui.js 中对 getChildren 进行动态主题感知过滤，实现全局所有主题菜单的随动隔离
+    #    同时规范化 Argon 与 Aurora 的 menu.d/*.json 菜单定义，并写入 files/ 根文件系统终极覆盖层
+    python3 - "$BUILD_DIR" <<'PY'
+import sys
+import re
+from pathlib import Path
+import json
+
+build_dir = Path(sys.argv[1])
+
+# 1. 动态过滤 ui.js
+ui_files = list(build_dir.glob("**/htdocs/luci-static/resources/ui.js"))
+for p in ui_files:
+    try:
+        content = p.read_text(encoding="utf-8", errors="ignore")
+        if "k === 'argon-config' && !curTheme.includes('argon')" in content:
+            continue
+        
+        target = "if (!node.children[k].hasOwnProperty('title'))\n\t\t\t\tcontinue;"
+        if target not in content:
+            m = re.search(r"(if\s*\(!node\.children\[k\]\.hasOwnProperty\(['\"]title['\"]\)\)\s*continue;)", content)
+            if m:
+                target = m.group(1)
+            else:
+                continue
+        
+        patch_code = target + """\n
+\t\t\tconst curTheme = L.env?.media || document.querySelector('link[href*="luci-static/"]')?.getAttribute('href') || '';
+\t\t\tif (k === 'argon-config' && !curTheme.includes('argon'))
+\t\t\t\tcontinue;
+\t\t\tif (k === 'aurora' && !curTheme.includes('aurora'))
+\t\t\t\tcontinue;"""
+        content = content.replace(target, patch_code, 1)
+        p.write_text(content, encoding="utf-8")
+        print(f"已成功为 {p} 注入主题菜单动态过滤逻辑。")
+    except Exception as e:
+        sys.stderr.write(f"Error patching ui.js {p}: {e}\n")
+
+# 2. 规范化 Argon 主题设置菜单
+argon_menus = list(build_dir.glob("**/luci-app-argon-config/**/menu.d/*.json"))
+argon_data = {
+    "admin/system/argon-config": {
+        "title": "Argon 主题设置",
+        "order": 90,
+        "action": {
+            "type": "view",
+            "path": "argon-config"
+        },
+        "depends": {
+            "acl": ["luci-app-argon-config"],
+            "uci": {"argon": True}
         }
-    with open(path, 'w', encoding='utf-8') as fp:
-        json.dump(data, fp, indent="\t", ensure_ascii=False)
-    print(f"已更新 {path} 为 Argon 智能随动菜单。")
-except Exception as e:
-    sys.stderr.write(f"Error updating argon menu: {e}\n")
+    }
+}
+for p in argon_menus:
+    try:
+        p.write_text(json.dumps(argon_data, indent="\t", ensure_ascii=False) + "\n", encoding="utf-8")
+    except Exception as e:
+        pass
+
+# 3. 规范化 Aurora 主题设置菜单
+aurora_menus = list(build_dir.glob("**/luci-app-aurora*/**/menu.d/*.json"))
+aurora_data = {
+    "admin/system/aurora": {
+        "title": "Aurora 主题设置",
+        "order": 90,
+        "action": {
+            "type": "firstchild"
+        },
+        "depends": {
+            "acl": ["luci-app-aurora"]
+        }
+    },
+    "admin/system/aurora/studio": {
+        "title": "设计工作室",
+        "order": 10,
+        "action": {
+            "type": "view",
+            "path": "aurora/studio"
+        }
+    },
+    "admin/system/aurora/marketplace": {
+        "title": "主题市场",
+        "order": 15,
+        "action": {
+            "type": "view",
+            "path": "aurora/marketplace"
+        }
+    }
+}
+for p in aurora_menus:
+    try:
+        p.write_text(json.dumps(aurora_data, indent="\t", ensure_ascii=False) + "\n", encoding="utf-8")
+    except Exception as e:
+        pass
+
+# 4. 根文件系统 files/ 终极覆盖层同步
+files_dir = build_dir / "files"
+(files_dir / "www/luci-static/resources").mkdir(parents=True, exist_ok=True)
+(files_dir / "usr/share/luci/menu.d").mkdir(parents=True, exist_ok=True)
+
+# 写入 menu.d json 到 files/
+(files_dir / "usr/share/luci/menu.d/luci-app-argon-config.json").write_text(
+    json.dumps(argon_data, indent="\t", ensure_ascii=False) + "\n", encoding="utf-8"
+)
+(files_dir / "usr/share/luci/menu.d/luci-app-aurora.json").write_text(
+    json.dumps(aurora_data, indent="\t", ensure_ascii=False) + "\n", encoding="utf-8"
+)
+
+# 写入已打补丁的 ui.js 到 files/
+ui_src = next(build_dir.glob("**/feeds/luci/modules/luci-base/htdocs/luci-static/resources/ui.js"), None)
+if ui_src and ui_src.exists():
+    (files_dir / "www/luci-static/resources/ui.js").write_text(ui_src.read_text(encoding="utf-8"), encoding="utf-8")
+    print("已将定制 ui.js 写入 files/ 根文件系统覆盖层。")
 PY
+
+    # 2. 视图层双向智能重定向防呆保护
+    local argon_js_list
+    mapfile -t argon_js_list < <(find "$BUILD_DIR" -type f -path "*/luci-app-argon-config/*/view/argon-config.js" 2>/dev/null)
+    for f in "${argon_js_list[@]}"; do
+        [ -f "$f" ] || continue
+        if ! grep -q "window.location.replace" "$f"; then
+            sed -i '/render:[[:space:]]*function/a \
+\t\tvar curTheme = L.env?.media || document.querySelector("link[href*=\\\"luci-static\\\"]")?.getAttribute("href") || "";\
+\t\tif (curTheme.indexOf("aurora") !== -1) {\
+\t\t\twindow.location.replace(L.url("admin/system/aurora/studio"));\
+\t\t\treturn E("div", { class: "cbi-map" }, _("正在跳转至当前主题设置..."));\
+\t\t}' "$f"
+            echo "已为 $f 注入智能主题检测跳转逻辑。"
+        fi
+        mkdir -p "$BUILD_DIR/files/www/luci-static/resources/view"
+        cp -f "$f" "$BUILD_DIR/files/www/luci-static/resources/view/argon-config.js"
     done
 
-    local aurora_menus
-    mapfile -t aurora_menus < <(find "$BUILD_DIR" -type f -path "*/luci-app-aurora-config/*/menu.d/*.json" 2>/dev/null)
-    for f in "${aurora_menus[@]}"; do
+    local aurora_js_list
+    mapfile -t aurora_js_list < <(find "$BUILD_DIR" -type f -path "*/luci-app-aurora-config/*/view/aurora/studio.js" 2>/dev/null)
+    for f in "${aurora_js_list[@]}"; do
         [ -f "$f" ] || continue
-        python3 - "$f" <<'PY'
-import json, sys
-path = sys.argv[1]
-try:
-    with open(path, 'r', encoding='utf-8') as fp:
-        data = json.load(fp)
-    for k, v in data.items():
-        if k == "admin/system/aurora":
-            v["title"] = "主题设置"
-            v["order"] = 90
-            v["depends"] = {
-                "uci": { "luci": { "main": { "mediaurlbase": "/luci-static/aurora" } } }
-            }
-    with open(path, 'w', encoding='utf-8') as fp:
-        json.dump(data, fp, indent="\t", ensure_ascii=False)
-    print(f"已更新 {path} 为 Aurora 智能随动菜单。")
-except Exception as e:
-    sys.stderr.write(f"Error updating aurora menu: {e}\n")
-PY
+        if ! grep -q "window.location.replace" "$f"; then
+            sed -i '/render:[[:space:]]*function/a \
+\t\tvar curTheme = L.env?.media || document.querySelector("link[href*=\\\"luci-static\\\"]")?.getAttribute("href") || "";\
+\t\tif (curTheme.indexOf("argon") !== -1) {\
+\t\t\twindow.location.replace(L.url("admin/system/argon-config"));\
+\t\t\treturn E("div", { class: "cbi-map" }, _("正在跳转至当前主题设置..."));\
+\t\t}' "$f"
+            echo "已为 $f 注入智能主题检测跳转逻辑。"
+        fi
+        mkdir -p "$BUILD_DIR/files/www/luci-static/resources/view/aurora"
+        cp -f "$f" "$BUILD_DIR/files/www/luci-static/resources/view/aurora/studio.js"
+    done
+
+    # 3. 侧边栏 CSS 物理级随动隔离
+    local argon_css_list
+    mapfile -t argon_css_list < <(find "$BUILD_DIR" -type f -path "*/luci-theme-argon/*/cascade.css" 2>/dev/null)
+    for f in "${argon_css_list[@]}"; do
+        [ -f "$f" ] || continue
+        if ! grep -q "admin/system/aurora" "$f"; then
+            cat >>"$f" <<'EOF'
+
+/* 智能随动：在 Argon 主题下自动隐藏 Aurora 菜单 */
+[data-page*="admin/system/aurora"], li:has(> a[href*="admin/system/aurora"]), a[href*="admin/system/aurora"] { display: none !important; }
+EOF
+            echo "已为 $f 添加 Aurora 菜单隔离样式。"
+        fi
+        mkdir -p "$BUILD_DIR/files/www/luci-static/argon/css"
+        cp -f "$f" "$BUILD_DIR/files/www/luci-static/argon/css/cascade.css"
+    done
+
+    local aurora_css_list
+    mapfile -t aurora_css_list < <(find "$BUILD_DIR" -type f -path "*/luci-theme-aurora/*/cascade.css" 2>/dev/null)
+    for f in "${aurora_css_list[@]}"; do
+        [ -f "$f" ] || continue
+        if ! grep -q "admin/system/argon-config" "$f"; then
+            cat >>"$f" <<'EOF'
+
+/* 智能随动：在 Aurora 主题下自动隐藏 Argon 菜单 */
+[data-page*="admin/system/argon-config"], li:has(> a[href*="admin/system/argon-config"]), a[href*="admin/system/argon-config"] { display: none !important; }
+EOF
+            echo "已为 $f 添加 Argon 菜单隔离样式。"
+        fi
+        mkdir -p "$BUILD_DIR/files/www/luci-static/aurora/css"
+        cp -f "$f" "$BUILD_DIR/files/www/luci-static/aurora/css/cascade.css"
     done
 }
+
 
