@@ -332,7 +332,7 @@ EOF
         if ! grep -q "client_body_in_file_only clean;" "$nginx_template"; then
             sed -i "/client_max_body_size 128M;/a\\
 \tclient_body_in_file_only clean;\\
-\tclient_body_temp_path /mnt/tmp;" "$nginx_template"
+\tclient_body_temp_path /tmp;" "$nginx_template"
         fi
     fi
 
