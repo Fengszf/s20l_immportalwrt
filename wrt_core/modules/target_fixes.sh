@@ -149,7 +149,7 @@ apply_custom_feed_patches() {
 
     # quickstart 首页深度定制：
     # 1. 挂载 OpenClash 科学代理卡片与 Lucky 运维管理卡片
-    # 2. 移除冗余的存储服务卡片
+    # 2. 移除冗余的存储服务卡片与下载服务卡片
     # 3. 文件管理按钮直达 luci-app-quickfile
     # 4. 修复小三角磁盘管理 404 错误 (diskman -> mini-diskmanager)
     # 5. 修正 appfilter -> oaf 链接及 linkState 检测
@@ -174,39 +174,36 @@ content = re.sub(
 )
 content = content.replace("/cgi-bin/luci/admin/services/linkease/file/", "/cgi-bin/luci/admin/system/quickfile")
 
-# 2. 定制 Lucky 卡片 (原 remoteDomain / s5)
-content = content.replace("DDNSTO", "Lucky")
-content = content.replace("https://www.kooldns.cn/app/#/devices", "/cgi-bin/luci/admin/services/lucky")
-content = re.sub(r'b6\(\{url:p\.value\.ddnstoDomain\}\)', 'window.open("/cgi-bin/luci/admin/services/lucky", "_blank")', content)
-content = content.replace(r'title:e(n)("\u8FDC\u7A0B\u57DF\u540D")', r'title:e(n)("Lucky 动态域名与反代")')
-content = content.replace(r'dt(" "+i(e(n)("\u57DF\u540D\u914D\u7F6E")),1)', r'dt(" "+i(e(n)("Lucky 配置")),1)')
+# 2. 重写 o1 (原下载服务组件) 为纯本地、零 RPC 依赖的 OpenClash 卡片组件
+pos_o1_start = content.find("o1=I({")
+pos_o1_end = content.find(";var n1=N(o1,")
+if pos_o1_end == -1:
+    pos_o1_end = content.find("var n1=N(o1,")
 
-# 3. 将原 downloadService (n1) 改造为 OpenClash 卡片
-content = content.replace(r'title:e(n)("\u4E0B\u8F7D\u670D\u52A1")', r'title:e(n)("OpenClash 科学代理")')
-content = content.replace(r'i(e(n)("\u4E0B\u8F7D\u7BA1\u7406"))', r'i(e(n)("OpenClash 配置"))')
-content = re.sub(r'const\s+v=\(\)=>\{G\.Guide\.DownloadPartition\.List\.GET\(\)[^}]+\};', 'const v=()=>{window.open("/cgi-bin/luci/admin/services/openclash", "_self")};', content)
-content = content.replace(r'i(e(n)("Aria2\u9AD8\u7EA7\u914D\u7F6E"))', r'i(e(n)("OpenClash 控制台"))')
-content = content.replace(r'i(e(n)("qBittorrent\u9AD8\u7EA7\u914D\u7F6E"))', r'i(e(n)("Cloudflare 优选测速"))')
-content = content.replace(r'i(e(n)("Transmission\u9AD8\u7EA7\u914D\u7F6E"))', r'i(e(n)("NetBird 异地组网"))')
-content = re.sub(r'y=\(\)=>\{b\("app-meta-aria2","Aria2","/cgi-bin/luci/admin/services/aria2"\)\}', 'y=()=>{window.open("/cgi-bin/luci/admin/services/openclash", "_self")}', content)
-content = re.sub(r'f=\(\)=>\{b\("app-meta-qbittorrent","qBittorrent","/cgi-bin/luci/admin/nas/qBittorrent"\)\}', 'f=()=>{window.open("/cgi-bin/luci/admin/services/cloudflarespeedtest", "_self")}', content)
-content = re.sub(r'F=\(\)=>\{b\("app-meta-transmission","Transmission","/cgi-bin/luci/admin/services/transmission"\)\}', 'F=()=>{window.open("/cgi-bin/luci/admin/vpn/netbird", "_self")}', content)
+if pos_o1_start != -1 and pos_o1_end != -1:
+    openclash_comp_code = '''o1=I({setup(o){const {$gettext:n}=J();const toOC=()=>{window.open("/cgi-bin/luci/admin/services/openclash","_self")},toCF=()=>{window.open("/cgi-bin/luci/admin/services/cloudflarespeedtest","_self")},toNB=()=>{window.open("/cgi-bin/luci/admin/vpn/netbird","_self")};return()=>(r(),Z(Wt,{title:e(n)("OpenClash 科学代理"),showSettings:!0,style:{width:"100%",height:"100%",display:"block"}},{icon:V(()=>[Y(pa,{color:"#155dfc",class:"icon"})]),settings:V(()=>[t("div",{class:"btn_settings",onClick:toOC},[t("span",null,"配置中心",1)])]),default:V(()=>[t("div",{style:{padding:"12px",display:"flex",flexDirection:"column",gap:"10px"}},[t("div",{style:{display:"flex",gap:"8px",flexWrap:"wrap"}},[t("button",{style:{flex:"1",minWidth:"110px",padding:"10px 6px",background:"#f0f6ff",color:"#155dfc",border:"1px solid #cce0ff",borderRadius:"6px",cursor:"pointer",fontWeight:"bold"},onClick:toOC},"✈️ OpenClash 管理"),t("button",{style:{flex:"1",minWidth:"110px",padding:"10px 6px",background:"#f4fbf7",color:"#00a63e",border:"1px solid #c3f2d7",borderRadius:"6px",cursor:"pointer",fontWeight:"bold"},onClick:toCF},"⚡ CF 优选测速"),t("button",{style:{flex:"1",minWidth:"110px",padding:"10px 6px",background:"#faf5ff",color:"#9810f9",border:"1px solid #ebd5ff",borderRadius:"6px",cursor:"pointer",fontWeight:"bold"},onClick:toNB},"🌐 NetBird 组网")])])])}))}}'''
+    content = content[:pos_o1_start] + openclash_comp_code + content[pos_o1_end:]
 
-# 4. 移除 storage 相关的残留
+# 3. 重写 r5 (原远程域名组件) 为纯本地、零 RPC 依赖的 Lucky 运维卡片组件
+pos_r5_start = content.find("r5=I({")
+pos_r5_end = content.find(";var s5=N(r5,")
+if pos_r5_end == -1:
+    pos_r5_end = content.find("var s5=N(r5,")
+
+if pos_r5_start != -1 and pos_r5_end != -1:
+    lucky_comp_code = '''r5=I({setup(o){const {$gettext:n}=J();const toLucky=()=>{window.open("/cgi-bin/luci/admin/services/lucky","_blank")};return()=>(r(),Z(Wt,{title:e(n)("Lucky 运维管理"),showSettings:!0,style:{width:"100%",height:"100%",display:"block"}},{icon:V(()=>[Y(He,{color:"#00a63e",class:"icon"})]),settings:V(()=>[t("div",{class:"btn_settings",onClick:toLucky},[t("span",null,"Lucky 控制台",1)])]),default:V(()=>[t("div",{style:{padding:"12px",display:"flex",flexDirection:"column",gap:"10px"}},[t("div",{style:{display:"flex",gap:"8px",flexWrap:"wrap"}},[t("button",{style:{flex:"1",minWidth:"110px",padding:"10px 6px",background:"#f4fbf7",color:"#00a63e",border:"1px solid #c3f2d7",borderRadius:"6px",cursor:"pointer",fontWeight:"bold"},onClick:toLucky},"🍀 动态域名 DDNS"),t("button",{style:{flex:"1",minWidth:"110px",padding:"10px 6px",background:"#f0f6ff",color:"#155dfc",border:"1px solid #cce0ff",borderRadius:"6px",cursor:"pointer",fontWeight:"bold"},onClick:toLucky},"🔀 端口转发/反代"),t("button",{style:{flex:"1",minWidth:"110px",padding:"10px 6px",background:"#fff7ed",color:"#ea580c",border:"1px solid #fed7aa",borderRadius:"6px",cursor:"pointer",fontWeight:"bold"},onClick:toLucky},"📁 WebDAV 服务")])])])}))}}'''
+    content = content[:pos_r5_start] + lucky_comp_code + content[pos_r5_end:]
+
+# 4. 彻底重写计算属性 A，确保 100% 渲染磁盘信息、Docker、OpenClash、Lucky 卡片
+pattern_A = r'const A=Q\(\(\)=>\{const R=\[\];return [^}]+\}\)'
+m_A = re.search(pattern_A, content)
+if m_A:
+    new_A = 'const A=Q(()=>{const R=[];return f.value.diskInfo!==false&&R.push({key:"diskInfo",component:$g}),Qt("dockerd")&&f.value.docker&&R.push({key:"docker",component:Wv}),R.push({key:"openclash",component:n1}),R.push({key:"lucky",component:s5}),R})'
+    content = content[:m_A.start()] + new_A + content[m_A.end():]
+
+# 5. 移除 storage 相关的残留
 content = re.sub(r'f\.value\.storage&&R\.push\(\{key:"storage",component:[a-zA-Z0-9_$]+\}\),', '', content)
 content = re.sub(r'\{key:"storage",title:[a-zA-Z0-9_$]+\("\\u5B58\\u50A8\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u5171\\u4EAB\\u4E0E\\u5B58\\u50A8\\u670D\\u52A1\\u6982\\u89C8"\)\},', '', content)
-
-# 5. 确保在卡片数组 A 中挂载 OpenClash (n1) 和 Lucky (s5)
-content = re.sub(
-    r'f\.value\.downloadService&&R\.push\(\{key:"downloadService",component:[a-zA-Z0-9_$]+\}\)',
-    r'R.push({key:"openclash",component:n1})',
-    content
-)
-content = re.sub(
-    r'f\.value\.remoteDomain&&R\.push\(\{key:"remoteDomain",component:[a-zA-Z0-9_$]+\}\)',
-    r'R.push({key:"lucky",component:s5})',
-    content
-)
 
 # 6. 更新设置管理列表 R 中的文案
 content = re.sub(
@@ -225,9 +222,18 @@ content = content.replace("admin/services/appfilter", "admin/services/oaf")
 content = content.replace('linkState=="DOWN"', 'linkState!="UP"')
 
 p.write_text(content, encoding="utf-8")
-print(f"已成功对 {p} 应用定制补丁 (OpenClash + Lucky 卡片 / 修复 diskman 404 / QuickFile 替换)。")
+print(f"已成功对 {p} 应用定制补丁 (OpenClash + Lucky 自包含组件 / 修复 diskman 404 / QuickFile 替换)。")
 PY
     done
+
+    # 双重保险：将定制完成的 index.js 写入 OpenWrt 构建树的 files/ 根文件系统覆盖层
+    local final_qs_js
+    final_qs_js=$(find "$BUILD_DIR" -type f -path "*/luci-app-quickstart/htdocs/luci-static/quickstart/index.js" 2>/dev/null | head -n 1)
+    if [ -f "$final_qs_js" ]; then
+        mkdir -p "$BUILD_DIR/files/www/luci-static/quickstart"
+        cp -f "$final_qs_js" "$BUILD_DIR/files/www/luci-static/quickstart/index.js"
+        echo "已将定制的 QuickStart index.js 写入 files/ 根文件系统终极覆盖层。"
+    fi
 
     # 智能随动主题设置菜单（Argon / Aurora 随当前生效主题自适应显示，统一标题为“主题设置”）
     fix_theme_config_menus
