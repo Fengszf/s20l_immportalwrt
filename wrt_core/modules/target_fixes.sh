@@ -195,15 +195,16 @@ if pos_r5_start != -1 and pos_r5_end != -1:
     content = content[:pos_r5_start] + lucky_comp_code + content[pos_r5_end:]
 
 # 4. 彻底重写计算属性 A，确保 100% 渲染磁盘信息、Docker、OpenClash、Lucky 卡片
-pattern_A = r'const A=Q\(\(\)=>\{const R=\[\];return [^}]+\}\)'
-m_A = re.search(pattern_A, content)
-if m_A:
-    new_A = 'const A=Q(()=>{const R=[];return f.value.diskInfo!==false&&R.push({key:"diskInfo",component:$g}),Qt("dockerd")&&f.value.docker&&R.push({key:"docker",component:Wv}),R.push({key:"openclash",component:n1}),R.push({key:"lucky",component:s5}),R})'
-    content = content[:m_A.start()] + new_A + content[m_A.end():]
+target_A = 'const A=Q(()=>{const R=[];return f.value.diskInfo&&R.push({key:"diskInfo",component:$g}),f.value.storage&&R.push({key:"storage",component:jf}),Qt("dockerd")&&f.value.docker&&R.push({key:"docker",component:Wv}),f.value.downloadService&&R.push({key:"downloadService",component:n1}),f.value.remoteDomain&&R.push({key:"remoteDomain",component:s5}),R})'
+new_A = 'const A=Q(()=>{const R=[];return f.value.diskInfo!==false&&R.push({key:"diskInfo",component:$g}),Qt("dockerd")&&f.value.docker&&R.push({key:"docker",component:Wv}),R.push({key:"openclash",component:n1}),R.push({key:"lucky",component:s5}),R})'
 
-# 5. 移除 storage 相关的残留
-content = re.sub(r'f\.value\.storage&&R\.push\(\{key:"storage",component:[a-zA-Z0-9_$]+\}\),', '', content)
-content = re.sub(r'\{key:"storage",title:[a-zA-Z0-9_$]+\("\\u5B58\\u50A8\\u670D\\u52A1"\),description:[a-zA-Z0-9_$]+\("\\u5171\\u4EAB\\u4E0E\\u5B58\\u50A8\\u670D\\u52A1\\u6982\\u89C8"\)\},', '', content)
+if target_A in content:
+    content = content.replace(target_A, new_A)
+else:
+    pattern_A = r'const A=Q\(\(\)=>\{const R=\[\];return .*?,R\}\)'
+    m_A = re.search(pattern_A, content)
+    if m_A:
+        content = content[:m_A.start()] + new_A + content[m_A.end():]
 
 # 6. 更新设置管理列表 R 中的文案
 content = re.sub(
