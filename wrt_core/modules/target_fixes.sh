@@ -181,7 +181,7 @@ if pos_o1_end == -1:
     pos_o1_end = content.find("var n1=N(o1,")
 
 if pos_o1_start != -1 and pos_o1_end != -1:
-    openclash_comp_code = '''o1=I({setup(o){const {$gettext:n}=J();const toOC=()=>{window.open("/cgi-bin/luci/admin/services/openclash","_self")},toCF=()=>{window.open("/cgi-bin/luci/admin/services/cloudflarespeedtest","_self")},toNB=()=>{window.open("/cgi-bin/luci/admin/vpn/netbird","_self")};return()=>(r(),Z(Wt,{title:e(n)("OpenClash 科学代理"),showSettings:!0,style:{width:"100%",height:"100%",display:"block"}},{icon:V(()=>[Y(pa,{color:"#155dfc",class:"icon"})]),settings:V(()=>[t("div",{class:"btn_settings",onClick:toOC},[Y(pa,{color:"#0a0a0a",class:"icon1",style:{"margin-right":"6px"}}),t("span",null,"配置中心",1)])]),default:V(()=>[t("div",Rc,[t("div",Wc,[t("div",{class:"item cloud",style:{cursor:"pointer"},onClick:toOC},[Y(pa,{color:"#155dfc",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"OpenClash"),t("span",{class:"configure enable"},"代理管理")]),t("div",{class:"item memory",style:{cursor:"pointer"},onClick:toCF},[Y(pa,{color:"#f54900",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"CF 测速"),t("span",{class:"configure enable"},"优选节点")]),t("div",{class:"item network",style:{cursor:"pointer"},onClick:toNB},[Y(pa,{color:"#009689",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"NetBird"),t("span",{class:"configure enable"},"异地组网")])]),t("div",{style:{padding:"12px 16px 4px",fontSize:"13px",color:"#666",display:"flex",justifyContent:"space-between",alignItems:"center"}},[t("span",null,"智能分流与科学代理中心"),t("a",{style:{color:"#155dfc",fontWeight:"bold",cursor:"pointer"},onClick:toOC},"进入 OpenClash 控制台 ➔")])])])}))}}'''
+    openclash_comp_code = '''o1=I({setup(o){const {$gettext:n}=J();const toOC=()=>{window.open("/cgi-bin/luci/admin/services/openclash","_self")},toCF=()=>{window.open("/cgi-bin/luci/admin/services/cloudflarespeedtest","_self")},toNB=()=>{window.open("/cgi-bin/luci/admin/vpn/netbird","_self")};return()=>(r(),Z(Wt,{title:e(n)("OpenClash 科学代理"),showSettings:!0,style:{width:"100%",height:"100%",display:"block"}},{icon:V(()=>[Y(pa,{color:"#155dfc",class:"icon"})]),settings:V(()=>[t("div",{class:"btn_settings",onClick:toOC},[Y(pa,{color:"#0a0a0a",class:"icon1",style:{"margin-right":"6px"}}),t("span",null,"配置中心",1)])]),default:V(()=>[t("div",Rc,[t("div",Wc,[t("div",{class:"item cloud",style:{cursor:"pointer"},onClick:toOC},[Y(pa,{color:"#155dfc",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"OpenClash"),t("span",{class:"configure enable"},"代理管理")]),t("div",{class:"item memory",style:{cursor:"pointer"},onClick:toCF},[Y(pa,{color:"#f54900",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"CF 测速"),t("span",{class:"configure enable"},"优选节点")]),t("div",{class:"item network",style:{cursor:"pointer"},onClick:toNB},[Y(pa,{color:"#009689",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"NetBird"),t("span",{class:"configure enable"},"异地组网")])]),t("div",{style:{padding:"12px 16px 4px",fontSize:"13px",color:"#666",display:"flex",justifyContent:"space-between",alignItems:"center"}},[t("span",null,"智能分流与科学代理中心"),t("a",{style:{color:"#155dfc",fontWeight:"bold",cursor:"pointer"},onClick:toOC},"进入 OpenClash 控制台 ➔")])])])}))}})'''
     content = content[:pos_o1_start] + openclash_comp_code + content[pos_o1_end:]
 
 # 3. 重写 r5 (原远程域名组件) 为原生三方块风格的 Lucky 运维卡片组件
@@ -191,7 +191,7 @@ if pos_r5_end == -1:
     pos_r5_end = content.find("var s5=N(r5,")
 
 if pos_r5_start != -1 and pos_r5_end != -1:
-    lucky_comp_code = '''r5=I({setup(o){const {$gettext:n}=J();const toLucky=()=>{window.open("/cgi-bin/luci/admin/services/lucky","_blank")};return()=>(r(),Z(Wt,{title:e(n)("Lucky 运维管理"),showSettings:!0,style:{width:"100%",height:"100%",display:"block"}},{icon:V(()=>[Y(He,{color:"#00a63e",class:"icon"})]),settings:V(()=>[t("div",{class:"btn_settings",onClick:toLucky},[Y(He,{color:"#0a0a0a",class:"icon1",style:{"margin-right":"6px"}}),t("span",null,"控制台",1)])]),default:V(()=>[t("div",Rc,[t("div",Wc,[t("div",{class:"item cloud",style:{cursor:"pointer"},onClick:toLucky},[Y(He,{color:"#00a63e",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"动态域名"),t("span",{class:"configure enable"},"DDNS")]),t("div",{class:"item memory",style:{cursor:"pointer"},onClick:toLucky},[Y(He,{color:"#155dfc",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"端口转发"),t("span",{class:"configure enable"},"反向代理")]),t("div",{class:"item network",style:{cursor:"pointer"},onClick:toLucky},[Y(He,{color:"#ea580c",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"WebDAV"),t("span",{class:"configure enable"},"文件服务")])]),t("div",{style:{padding:"12px 16px 4px",fontSize:"13px",color:"#666",display:"flex",justifyContent:"space-between",alignItems:"center"}},[t("span",null,"Lucky 动态解析与内网穿透"),t("a",{style:{color:"#00a63e",fontWeight:"bold",cursor:"pointer"},onClick:toLucky},"打开 Lucky 控制台 ➔")])])])}))}}'''
+    lucky_comp_code = '''r5=I({setup(o){const {$gettext:n}=J();const toLucky=()=>{window.open("/cgi-bin/luci/admin/services/lucky","_blank")};return()=>(r(),Z(Wt,{title:e(n)("Lucky 运维管理"),showSettings:!0,style:{width:"100%",height:"100%",display:"block"}},{icon:V(()=>[Y(He,{color:"#00a63e",class:"icon"})]),settings:V(()=>[t("div",{class:"btn_settings",onClick:toLucky},[Y(He,{color:"#0a0a0a",class:"icon1",style:{"margin-right":"6px"}}),t("span",null,"控制台",1)])]),default:V(()=>[t("div",Rc,[t("div",Wc,[t("div",{class:"item cloud",style:{cursor:"pointer"},onClick:toLucky},[Y(He,{color:"#00a63e",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"动态域名"),t("span",{class:"configure enable"},"DDNS")]),t("div",{class:"item memory",style:{cursor:"pointer"},onClick:toLucky},[Y(He,{color:"#155dfc",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"端口转发"),t("span",{class:"configure enable"},"反向代理")]),t("div",{class:"item network",style:{cursor:"pointer"},onClick:toLucky},[Y(He,{color:"#ea580c",class:"icon2"}),t("div",{class:"aria2-name",style:{fontWeight:"bold"}},"WebDAV"),t("span",{class:"configure enable"},"文件服务")])]),t("div",{style:{padding:"12px 16px 4px",fontSize:"13px",color:"#666",display:"flex",justifyContent:"space-between",alignItems:"center"}},[t("span",null,"Lucky 动态解析与内网穿透"),t("a",{style:{color:"#00a63e",fontWeight:"bold",cursor:"pointer"},onClick:toLucky},"打开 Lucky 控制台 ➔")])])])}))}})'''
     content = content[:pos_r5_start] + lucky_comp_code + content[pos_r5_end:]
 
 # 4. 彻底重写计算属性 A，确保 100% 渲染磁盘信息、Docker、OpenClash、Lucky 卡片
@@ -695,6 +695,66 @@ EOF
         fi
         mkdir -p "$BUILD_DIR/files/www/luci-static/aurora/css"
         cp -f "$f" "$BUILD_DIR/files/www/luci-static/aurora/css/cascade.css"
+    done
+
+    # 5. 全局 CBI 表格卡片内自适应横向滚动条修复（保证多列表格在卡片内部横向滚动，不越界）
+    local tbl_list
+    mapfile -t tbl_list < <(find "$BUILD_DIR" -type f -path "*/luci-compat/*/view/cbi/tblsection.htm" 2>/dev/null)
+    for f in "${tbl_list[@]}"; do
+        [ -f "$f" ] || continue
+        python3 - "$f" <<'PY'
+import sys
+from pathlib import Path
+p = Path(sys.argv[1])
+content = p.read_text(encoding="utf-8")
+if ".cbi-tblsection-table-scroll" not in content:
+    style = """<style type="text/css">
+.cbi-section.cbi-tblsection {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+.cbi-tblsection-table-scroll {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+    margin: 10px 0 !important;
+    padding-bottom: 6px !important;
+}
+.cbi-tblsection-table-scroll::-webkit-scrollbar {
+    height: 8px !important;
+    background: #f1f5f9 !important;
+}
+.cbi-tblsection-table-scroll::-webkit-scrollbar-thumb {
+    background: #5e72e4 !important;
+    border-radius: 4px !important;
+}
+.cbi-tblsection-table-scroll::-webkit-scrollbar-thumb:hover {
+    background: #324cdd !important;
+}
+.cbi-tblsection-table-scroll > table.cbi-section-table {
+    min-width: 100% !important;
+    width: max-content !important;
+    display: table !important;
+    table-layout: auto !important;
+}
+.cbi-tblsection-table-scroll .cbi-section-table-cell {
+    white-space: nowrap !important;
+}
+</style>
+"""
+    content = content.replace('<!-- tblsection -->', style + '\n<!-- tblsection -->')
+    content = content.replace('<table class="table cbi-section-table">', '<div class="cbi-tblsection-table-scroll">\n\t<table class="table cbi-section-table">', 1)
+    idx = content.find('</table>')
+    if idx != -1:
+        content = content[:idx] + '</table>\n\t</div>' + content[idx+8:]
+    p.write_text(content, encoding="utf-8")
+    print("已对", p, "应用卡片内横向滚动容器补丁。")
+PY
+        mkdir -p "$BUILD_DIR/files/usr/lib/lua/luci/view/cbi"
+        cp -f "$f" "$BUILD_DIR/files/usr/lib/lua/luci/view/cbi/tblsection.htm"
     done
 }
 

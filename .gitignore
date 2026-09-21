@@ -33,3 +33,7 @@ wrt_core/deconfig/test.config
 .taskmaster/
 .sisyphus/
 AGENTS.md
+deploy_hotpatch.py
+deploy_to_router.ps1
+hotpatch/
+router_hotpatch/
