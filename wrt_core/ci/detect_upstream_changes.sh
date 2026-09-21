@@ -12,6 +12,7 @@ LEGACY_FINGERPRINT_COMMITS=(
 
 MODELS=(
     s20l_immwrt
+    s20l_immwrt_1024m
 )
 
 read_ini_value() {

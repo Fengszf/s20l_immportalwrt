@@ -11,6 +11,8 @@ on:
     paths:
       - "wrt_core/deconfig/s20l_immwrt.config"
       - "wrt_core/compilecfg/s20l_immwrt.ini"
+      - "wrt_core/deconfig/s20l_immwrt_1024m.config"
+      - "wrt_core/compilecfg/s20l_immwrt_1024m.ini"
       - "wrt_core/deconfig/compile_base.config"
       - "wrt_core/deconfig/fragments/**"
       - "wrt_core/modules/**"
@@ -31,6 +33,7 @@ on:
         options:
           - all
           - s20l_immwrt
+          - s20l_immwrt_1024m
       force_build:
         description: Build even when the fingerprint was already released
         required: true

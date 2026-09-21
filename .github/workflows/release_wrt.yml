@@ -11,6 +11,7 @@ on:
         default: s20l_immwrt
         options:
           - s20l_immwrt
+          - s20l_immwrt_1024m
       add_fragments:
         required: false
         description: Add config fragments, comma separated
@@ -249,7 +250,13 @@ jobs:
 
       - name: Prepare Release Body
         run: |
-          echo "云编译发布测试中" > release_body.txt
+          if [[ "${{ inputs.model }}" == *"1024m"* ]]; then
+            echo "📦【固件版本】S20L 扩容分区版 (1024MB Rootfs)" > release_body.txt
+            echo "⚠️【重要提示】本固件将根分区 (/overlay) 扩容为 1024MB 满血运行，仅适用于已刷入 1024M GPT 分区表的设备！普通未改分区设备请刷【官方分区版】，慎刷！" >> release_body.txt
+          else
+            echo "📦【固件版本】S20L 官方标准分区版 (Default Partition)" > release_body.txt
+            echo "💡【兼容提示】适用于官方标准分区及未修改分区的原厂设备，兼容性最佳。" >> release_body.txt
+          fi
           echo "源码：${{ env.BUILD_SRC }}" >> release_body.txt
           echo "Kernel: ${{ env.KVER }}" >> release_body.txt
           echo "WIFI密码: 12345678" >> release_body.txt
@@ -267,6 +274,7 @@ jobs:
           echo "- 首页卡片重构：磁盘信息(QuickFile秒开)+Docker+OpenClash代理中心+Lucky运维管理" >> release_body.txt
           echo "- 智能随动主题设置：统一主题设置入口，随当前生效主题自动匹配展示" >> release_body.txt
           echo "- 修复磁盘管理404错误(正确映射Mini DiskManager)，修正PPTP协议标签显示" >> release_body.txt
+          echo "- 修复 Nginx 上传固件缓存路径，优化 uWSGI 高并发响应" >> release_body.txt
           echo "插件：" >> release_body.txt
           echo "$(grep -oP "luci-app(-[a-zA-Z0-9]{1,}){1,}" ./firmware/*.manifest | awk -F":" '{print $NF}')"  >> release_body.txt
 
@@ -294,7 +302,7 @@ jobs:
           body_path: ./release_body.txt
 
       - name: Prune Old Monitored Releases
-        if: ${{ inputs.model == 's20l_immwrt' }}
+        if: ${{ inputs.model == 's20l_immwrt' || inputs.model == 's20l_immwrt_1024m' }}
         env:
           MODEL: ${{ inputs.model }}
         run: |

@@ -11,6 +11,7 @@ on:
         default: s20l_immwrt
         options:
           - s20l_immwrt
+          - s20l_immwrt_1024m
       add_fragments:
         required: false
         description: Add config fragments, comma separated
